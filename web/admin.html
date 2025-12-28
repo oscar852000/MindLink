@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindLink - 提示词管理</title>
+    <link rel="stylesheet" href="/static/css/admin.css?v=20251228a">
+</head>
+<body>
+    <div class="admin-app">
+        <header class="admin-header">
+            <h1>MindLink 提示词管理</h1>
+            <a href="/" class="back-link">← 返回主页</a>
+        </header>
+
+        <main class="admin-main">
+            <div class="prompt-list" id="promptList">
+                <!-- 提示词列表动态生成 -->
+            </div>
+
+            <div class="prompt-editor" id="promptEditor" style="display: none;">
+                <div class="editor-header">
+                    <h2 id="editorTitle">编辑提示词</h2>
+                    <div class="editor-actions">
+                        <button class="btn-secondary" onclick="resetPrompt()">重置为默认</button>
+                        <button class="btn-primary" onclick="savePrompt()">保存</button>
+                    </div>
+                </div>
+                <div class="editor-info">
+                    <p id="editorDescription"></p>
+                    <p class="editor-tip">提示：修改后点击保存，系统会在下次调用时使用新的提示词</p>
+                </div>
+                <textarea id="promptContent" placeholder="输入提示词内容..."></textarea>
+            </div>
+        </main>
+    </div>
+
+    <script src="/static/js/admin.js?v=20251228a"></script>
+</body>
+</html>

@@ -75,6 +75,22 @@ body {
     color: var(--accent);
 }
 
+.admin-link {
+    display: block;
+    margin-top: 0.75rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    text-decoration: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.admin-link:hover {
+    opacity: 1;
+    color: var(--accent);
+}
+
 .mind-list {
     flex: 1;
     overflow-y: auto;
@@ -218,7 +234,325 @@ body {
     color: var(--accent-green);
 }
 
+.feed-status.error {
+    background: rgba(255, 107, 107, 0.1);
+    color: #ff6b6b;
+}
+
+/* 时间轴视图 */
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.timeline-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.timeline-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.timeline-content .placeholder {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+
+.timeline-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.timeline-day {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+}
+
+.timeline-date {
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.timeline-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.timeline-item:last-child {
+    border-bottom: none;
+}
+
+.timeline-time {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    min-width: 50px;
+    flex-shrink: 0;
+}
+
+.timeline-text {
+    flex: 1;
+    line-height: 1.6;
+    color: var(--text-primary);
+}
+
+/* 叙事视图 */
+.narrative-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.narrative-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.narrative-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.narrative-content .placeholder {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+
+.narrative-content .loading {
+    color: var(--accent);
+    text-align: center;
+    padding: 2rem;
+}
+
+.narrative-text {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: 8px;
+    line-height: 2;
+    font-size: 1.05rem;
+    white-space: pre-wrap;
+}
+
+/* 结构视图 */
+.structure-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.structure-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.structure-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.structure-content .placeholder {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+
+.structure-text {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    border-radius: 8px;
+    line-height: 1.8;
+}
+
+.structure-text h3 {
+    color: var(--accent);
+    font-size: 1rem;
+    margin: 1.5rem 0 0.75rem 0;
+}
+
+.structure-text h3:first-child {
+    margin-top: 0;
+}
+
+.structure-text ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.structure-text li {
+    padding: 0.25rem 0;
+    padding-left: 1.25rem;
+    position: relative;
+}
+
+.structure-text li::before {
+    content: "•";
+    color: var(--accent-green);
+    position: absolute;
+    left: 0;
+}
+
+/* 对话区 */
+.chat-header {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.chat-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.chat-select {
+    padding: 0.5rem 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.chat-select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    min-height: 300px;
+    max-height: 50vh;
+}
+
+.chat-welcome {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.chat-welcome p {
+    margin: 0.5rem 0;
+}
+
+.chat-message {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    max-width: 85%;
+}
+
+.chat-message.user {
+    background: rgba(0, 217, 255, 0.1);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    margin-left: auto;
+}
+
+.chat-message.assistant {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border);
+}
+
+.chat-message .role {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.chat-message .content {
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.chat-message.loading .content {
+    color: var(--accent);
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end;
+}
+
+.chat-input-area textarea {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    resize: none;
+    min-height: 44px;
+    max-height: 120px;
+}
+
+.chat-input-area textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
 /* 总览区 */
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.view-btn {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+}
+
+.view-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.view-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-dark);
+}
+
 .crystal-content {
     background: var(--bg-card);
     padding: 1.5rem;
@@ -258,6 +592,121 @@ body {
     color: var(--text-secondary);
     text-align: center;
     padding: 2rem;
+}
+
+/* 叙事视图样式 */
+.crystal-content.narrative {
+    font-size: 1.05rem;
+    line-height: 2;
+    color: var(--text-primary);
+    white-space: pre-wrap;
+}
+
+/* 思维导图区 */
+.mindmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.mindmap-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.mindmap-container {
+    background: var(--bg-card);
+    border-radius: 8px;
+    min-height: 400px;
+    padding: 1.5rem;
+    overflow: auto;
+}
+
+.mindmap-container .placeholder {
+    color: var(--text-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+
+.mindmap-loading {
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+}
+
+/* 树形导图样式 */
+.mindmap-tree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.tree-center {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--accent);
+    padding: 1rem 2rem;
+    background: rgba(0, 217, 255, 0.1);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    text-align: center;
+}
+
+.tree-branches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    width: 100%;
+}
+
+.tree-branch {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1rem;
+    min-width: 200px;
+    max-width: 280px;
+    flex: 1;
+}
+
+.tree-branch.pending {
+    border-left: 3px solid #ffd93d;
+}
+
+.branch-label {
+    font-weight: 500;
+    color: var(--accent-green);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.branch-children {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.branch-children li {
+    padding: 0.35rem 0;
+    padding-left: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.branch-children li::before {
+    content: "•";
+    color: var(--text-secondary);
+    position: absolute;
+    left: 0;
 }
 
 /* 澄清区 */

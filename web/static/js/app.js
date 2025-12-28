@@ -1,11 +1,12 @@
 /**
- * MindLink 前端应用
+ * MindLink 前端应用 - 三层架构版本
  */
 
 const API_BASE = '/api';
 
 // 状态
 let currentMindId = null;
+let chatHistory = []; // 对话历史
 
 // DOM 元素
 const mindList = document.getElementById('mindList');
@@ -14,10 +15,15 @@ const mindDetail = document.getElementById('mindDetail');
 const mindTitle = document.getElementById('mindTitle');
 const feedInput = document.getElementById('feedInput');
 const feedStatus = document.getElementById('feedStatus');
-const crystalContent = document.getElementById('crystalContent');
+const timelineContent = document.getElementById('timelineContent');
+const narrativeContent = document.getElementById('narrativeContent');
+const structureContent = document.getElementById('structureContent');
 const outputInstruction = document.getElementById('outputInstruction');
 const outputResult = document.getElementById('outputResult');
-const clarifyQuestions = document.getElementById('clarifyQuestions');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatModel = document.getElementById('chatModel');
+const chatStyle = document.getElementById('chatStyle');
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
@@ -36,11 +42,18 @@ function setupEventListeners() {
     // 投喂按钮
     document.getElementById('feedBtn').addEventListener('click', submitFeed);
 
+    // 生成叙事按钮
+    document.getElementById('generateNarrativeBtn').addEventListener('click', generateNarrative);
+
     // 输出按钮
     document.getElementById('outputBtn').addEventListener('click', generateOutput);
 
-    // 澄清按钮
-    document.getElementById('clarifyBtn').addEventListener('click', loadClarifyQuestions);
+    // 刷新导图按钮
+    document.getElementById('refreshMindmapBtn').addEventListener('click', loadMindmap);
+
+    // 对话相关
+    document.getElementById('sendChatBtn').addEventListener('click', sendChatMessage);
+    document.getElementById('clearChatBtn').addEventListener('click', clearChat);
 
     // 标签页切换
     document.querySelectorAll('.tab').forEach(tab => {
@@ -58,6 +71,14 @@ function setupEventListeners() {
 
     outputInstruction.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') generateOutput();
+    });
+
+    // 对话输入框 Enter 发送
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+        }
     });
 }
 
@@ -93,14 +114,7 @@ async function loadMinds() {
 // 选择 Mind
 async function selectMind(mindId) {
     currentMindId = mindId;
-
-    // 重置澄清状态
-    clarifyState = { questions: [], answeredCount: 0 };
-    const clarifyBtn = document.getElementById('clarifyBtn');
-    clarifyBtn.style.display = 'block';
-    clarifyBtn.disabled = false;
-    clarifyBtn.textContent = '确认理解';
-    clarifyQuestions.innerHTML = '';
+    chatHistory = []; // 切换 Mind 时清空对话历史
 
     // 更新列表选中状态
     document.querySelectorAll('.mind-item').forEach(item => {
@@ -111,35 +125,110 @@ async function selectMind(mindId) {
     emptyState.style.display = 'none';
     mindDetail.style.display = 'flex';
 
+    // 重置对话区
+    chatMessages.innerHTML = `
+        <div class="chat-welcome">
+            <p>我已经了解了你关于这个主题的所有想法。</p>
+            <p>有什么想和我讨论的吗？</p>
+        </div>
+    `;
+
     // 加载详情
     try {
         const response = await fetch(`${API_BASE}/minds/${mindId}`);
         const mind = await response.json();
-
         mindTitle.textContent = mind.title;
 
-        // 加载 Crystal
-        await loadCrystal();
+        // 加载时间轴和结构
+        await Promise.all([
+            loadTimeline(),
+            loadStructure()
+        ]);
     } catch (error) {
         console.error('加载失败:', error);
     }
 }
 
-// 加载 Crystal
-async function loadCrystal() {
+// 加载时间轴
+async function loadTimeline() {
+    if (!currentMindId) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/timeline-view`);
+        const data = await response.json();
+
+        if (!data.timeline || data.timeline.length === 0) {
+            timelineContent.innerHTML = '<p class="placeholder">还没有内容，先投喂一些想法吧</p>';
+            return;
+        }
+
+        let html = '<div class="timeline-list">';
+        data.timeline.forEach(day => {
+            html += `<div class="timeline-day">
+                <div class="timeline-date">${day.date}</div>`;
+            day.items.forEach(item => {
+                html += `<div class="timeline-item">
+                    <span class="timeline-time">${item.time}</span>
+                    <div class="timeline-text">${escapeHtml(item.content)}</div>
+                </div>`;
+            });
+            html += '</div>';
+        });
+        html += '</div>';
+
+        timelineContent.innerHTML = html;
+    } catch (error) {
+        console.error('加载时间轴失败:', error);
+        timelineContent.innerHTML = '<p class="placeholder">加载失败</p>';
+    }
+}
+
+// 加载结构视图
+async function loadStructure() {
     if (!currentMindId) return;
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/crystal`);
         const data = await response.json();
 
-        if (data.crystal_markdown) {
-            crystalContent.innerHTML = `<div class="crystal-text">${markdownToHtml(data.crystal_markdown)}</div>`;
+        if (!data.structure_markdown || data.structure_markdown === '还没有内容，先投喂一些想法吧') {
+            structureContent.innerHTML = '<p class="placeholder">还没有内容，先投喂一些想法吧</p>';
+            return;
+        }
+
+        structureContent.innerHTML = `<div class="structure-text">${markdownToHtml(data.structure_markdown)}</div>`;
+    } catch (error) {
+        console.error('加载结构失败:', error);
+        structureContent.innerHTML = '<p class="placeholder">加载失败</p>';
+    }
+}
+
+// 生成叙事
+async function generateNarrative() {
+    if (!currentMindId) return;
+
+    const btn = document.getElementById('generateNarrativeBtn');
+    btn.disabled = true;
+    btn.textContent = '生成中...';
+    narrativeContent.innerHTML = '<p class="loading">正在整合所有记录，生成叙事...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/narrative`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+
+        if (data.narrative) {
+            narrativeContent.innerHTML = `<div class="narrative-text">${escapeHtml(data.narrative)}</div>`;
         } else {
-            crystalContent.innerHTML = '<p class="placeholder">还没有内容，先投喂一些想法吧</p>';
+            narrativeContent.innerHTML = '<p class="placeholder">暂无内容</p>';
         }
     } catch (error) {
-        console.error('加载 Crystal 失败:', error);
+        console.error('生成叙事失败:', error);
+        narrativeContent.innerHTML = '<p class="placeholder">生成失败</p>';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '生成叙事';
     }
 }
 
@@ -158,6 +247,7 @@ async function createMind() {
         if (response.ok) {
             const mind = await response.json();
             closeModal();
+            document.getElementById('newMindTitle').value = '';
             await loadMinds();
             selectMind(mind.id);
         }
@@ -169,7 +259,6 @@ async function createMind() {
 // 关闭弹窗
 function closeModal() {
     document.getElementById('createMindModal').classList.remove('show');
-    document.getElementById('newMindTitle').value = '';
 }
 
 // 提交投喂
@@ -181,7 +270,8 @@ async function submitFeed() {
 
     const btn = document.getElementById('feedBtn');
     btn.disabled = true;
-    btn.textContent = '记录中...';
+    feedStatus.textContent = '正在处理...';
+    feedStatus.className = 'feed-status';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/feed`, {
@@ -192,26 +282,29 @@ async function submitFeed() {
 
         if (response.ok) {
             feedInput.value = '';
-            feedStatus.textContent = '✓ 已记录';
+            feedStatus.textContent = '已记录，正在去噪和更新结构...';
             feedStatus.className = 'feed-status success';
 
-            // 刷新 Crystal
-            await loadCrystal();
-            await loadMinds();
-
-            // 3秒后清除状态
-            setTimeout(() => {
-                feedStatus.textContent = '';
-                feedStatus.className = 'feed-status';
+            // 延迟刷新，等待后台处理
+            setTimeout(async () => {
+                await Promise.all([
+                    loadTimeline(),
+                    loadStructure()
+                ]);
+                feedStatus.textContent = '处理完成';
             }, 3000);
+
+            loadMinds();
+        } else {
+            feedStatus.textContent = '提交失败';
+            feedStatus.className = 'feed-status error';
         }
     } catch (error) {
         console.error('投喂失败:', error);
-        feedStatus.textContent = '投喂失败，请重试';
+        feedStatus.textContent = '提交失败';
         feedStatus.className = 'feed-status error';
     } finally {
         btn.disabled = false;
-        btn.textContent = '投喂';
     }
 }
 
@@ -224,8 +317,7 @@ async function generateOutput() {
 
     const btn = document.getElementById('outputBtn');
     btn.disabled = true;
-    btn.textContent = '生成中...';
-    outputResult.textContent = '正在生成...';
+    outputResult.innerHTML = '<p class="loading">正在生成...</p>';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/output`, {
@@ -236,176 +328,71 @@ async function generateOutput() {
 
         if (response.ok) {
             const data = await response.json();
-            outputResult.textContent = data.content;
+            outputResult.innerHTML = `<div class="output-text">${escapeHtml(data.content)}</div>`;
         } else {
             const error = await response.json();
-            outputResult.textContent = '生成失败: ' + (error.detail || '未知错误');
+            outputResult.innerHTML = `<p class="error">${error.detail || '生成失败'}</p>`;
         }
     } catch (error) {
         console.error('生成失败:', error);
-        outputResult.textContent = '生成失败，请重试';
+        outputResult.innerHTML = '<p class="error">生成失败</p>';
     } finally {
         btn.disabled = false;
-        btn.textContent = '生成';
     }
 }
 
-// ========== 澄清功能 ==========
-
-// 当前会话的问题状态
-let clarifyState = {
-    questions: [],
-    answeredCount: 0
-};
-
-// 加载澄清问题
-async function loadClarifyQuestions() {
+// 加载思维导图
+async function loadMindmap() {
     if (!currentMindId) return;
 
-    const btn = document.getElementById('clarifyBtn');
-    btn.disabled = true;
-    btn.textContent = '确认中...';
-    clarifyQuestions.innerHTML = '<p class="loading">AI 正在确认理解...</p>';
+    const container = document.getElementById('mindmapContainer');
+    container.innerHTML = '<div class="mindmap-loading">正在生成思维导图...</div>';
 
     try {
-        const response = await fetch(`${API_BASE}/minds/${currentMindId}/clarify`, {
-            method: 'POST'
-        });
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/mindmap`);
+        const data = await response.json();
 
-        if (response.ok) {
-            const data = await response.json();
-
-            if (!data.has_questions || data.questions.length === 0) {
-                clarifyQuestions.innerHTML = `
-                    <div class="no-questions">
-                        <p>✓ AI 已正确理解你的想法</p>
-                        <p>当前内容清晰，无需额外确认</p>
-                    </div>
-                `;
-                btn.textContent = '已理解';
-                btn.disabled = true;
-            } else {
-                clarifyState.questions = data.questions;
-                clarifyState.answeredCount = 0;
-                renderClarifyQuestions(data.questions);
-                btn.style.display = 'none'; // 隐藏按钮，让用户专注于回答问题
-            }
+        if (data.mindmap && data.mindmap.branches && data.mindmap.branches.length > 0) {
+            renderMindmap(data.mindmap);
         } else {
-            const error = await response.json();
-            clarifyQuestions.innerHTML = `<p class="error">加载失败: ${error.detail || '未知错误'}</p>`;
-            btn.disabled = false;
-            btn.textContent = '确认理解';
+            container.innerHTML = '<p class="placeholder">还没有足够的内容生成导图</p>';
         }
     } catch (error) {
-        console.error('加载澄清问题失败:', error);
-        clarifyQuestions.innerHTML = '<p class="error">加载失败，请重试</p>';
-        btn.disabled = false;
-        btn.textContent = '确认理解';
+        console.error('加载导图失败:', error);
+        container.innerHTML = '<p class="placeholder">加载失败</p>';
     }
 }
 
-// 渲染澄清问题卡片
-function renderClarifyQuestions(questions) {
-    clarifyQuestions.innerHTML = questions.map((q, index) => `
-        <div class="question-card" data-index="${index}">
-            <div class="question-header">
-                <h4>${escapeHtml(q.question)}</h4>
-                ${q.context ? `<p class="question-context">${escapeHtml(q.context)}</p>` : ''}
-            </div>
-            <div class="question-options">
-                ${q.options.map(opt => `
-                    <button class="option-btn" onclick="selectOption(${index}, '${escapeHtml(opt).replace(/'/g, "\\'")}')">
-                        ${escapeHtml(opt)}
-                    </button>
-                `).join('')}
-                <button class="option-btn option-custom" onclick="showCustomInput(${index})">
-                    其他...
-                </button>
-            </div>
-            <div class="custom-input-wrapper" id="customInput${index}" style="display: none;">
-                <input type="text" placeholder="输入你的答案..." class="custom-answer-input" id="customAnswer${index}">
-                <button class="btn-primary btn-small" onclick="submitCustomAnswer(${index})">确定</button>
-            </div>
-        </div>
-    `).join('');
+// 渲染思维导图
+function renderMindmap(mindmap) {
+    const container = document.getElementById('mindmapContainer');
 
-    // 存储问题数据供后续使用
-    window.clarifyQuestionsData = questions;
-}
+    let html = '<div class="mindmap-tree">';
+    html += `<div class="tree-center">${escapeHtml(mindmap.center)}</div>`;
+    html += '<div class="tree-branches">';
 
-// 选择选项
-async function selectOption(questionIndex, answer) {
-    const question = window.clarifyQuestionsData[questionIndex];
-    await submitAnswer(question.question, answer, questionIndex);
-}
+    mindmap.branches.forEach(branch => {
+        const isPending = branch.type === 'pending';
+        html += `<div class="tree-branch${isPending ? ' pending' : ''}">
+            <div class="branch-label">${escapeHtml(branch.label)}${isPending ? ' ❓' : ''}</div>`;
 
-// 显示自定义输入
-function showCustomInput(questionIndex) {
-    const wrapper = document.getElementById(`customInput${questionIndex}`);
-    wrapper.style.display = 'flex';
-    document.getElementById(`customAnswer${questionIndex}`).focus();
-}
-
-// 提交自定义答案
-async function submitCustomAnswer(questionIndex) {
-    const input = document.getElementById(`customAnswer${questionIndex}`);
-    const answer = input.value.trim();
-    if (!answer) return;
-
-    const question = window.clarifyQuestionsData[questionIndex];
-    await submitAnswer(question.question, answer, questionIndex);
-}
-
-// 提交答案
-async function submitAnswer(question, answer, questionIndex) {
-    const card = document.querySelector(`.question-card[data-index="${questionIndex}"]`);
-    card.classList.add('answered');
-    card.innerHTML = `
-        <div class="answer-result">
-            <p class="answered-question">${escapeHtml(question)}</p>
-            <p class="answered-answer">✓ ${escapeHtml(answer)}</p>
-        </div>
-    `;
-
-    // 更新已回答计数
-    clarifyState.answeredCount++;
-
-    try {
-        await fetch(`${API_BASE}/minds/${currentMindId}/answer`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ question, answer })
-        });
-
-        // 检查是否所有问题都已回答
-        if (clarifyState.answeredCount >= clarifyState.questions.length) {
-            // 所有问题已回答，显示完成状态
-            setTimeout(() => {
-                clarifyQuestions.innerHTML = `
-                    <div class="clarify-complete">
-                        <p>✓ 确认完成</p>
-                        <p>AI 已记录你的澄清，想法已更新</p>
-                    </div>
-                `;
-                const btn = document.getElementById('clarifyBtn');
-                btn.style.display = 'block';
-                btn.textContent = '已理解';
-                btn.disabled = true;
-            }, 500);
+        if (branch.children && branch.children.length > 0) {
+            html += '<ul class="branch-children">';
+            branch.children.forEach(child => {
+                html += `<li>${escapeHtml(child)}</li>`;
+            });
+            html += '</ul>';
         }
+        html += '</div>';
+    });
 
-        // 刷新 Crystal
-        await loadCrystal();
-        await loadMinds();
-
-    } catch (error) {
-        console.error('提交答案失败:', error);
-    }
+    html += '</div></div>';
+    container.innerHTML = html;
 }
 
 // 切换标签页
 function switchTab(tabName) {
-    // 更新标签状态
+    // 更新标签按钮状态
     document.querySelectorAll('.tab').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.tab === tabName);
     });
@@ -414,47 +401,132 @@ function switchTab(tabName) {
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(tabName + 'Tab').classList.add('active');
+    document.getElementById(`${tabName}Tab`).classList.add('active');
+}
 
-    // 刷新 Crystal
-    if (tabName === 'crystal') {
-        loadCrystal();
+// ========== 对话功能 ==========
+
+// 发送对话消息
+async function sendChatMessage() {
+    if (!currentMindId) return;
+
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    const btn = document.getElementById('sendChatBtn');
+    btn.disabled = true;
+
+    // 添加用户消息到界面
+    addChatMessage('user', message);
+    chatInput.value = '';
+
+    // 添加加载状态
+    const loadingId = addChatMessage('assistant', '思考中...', true);
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                history: chatHistory,
+                model: chatModel.value,
+                style: chatStyle.value
+            })
+        });
+
+        // 移除加载状态
+        removeChatMessage(loadingId);
+
+        if (response.ok) {
+            const data = await response.json();
+            // 添加 AI 回复
+            addChatMessage('assistant', data.reply);
+            // 更新历史
+            chatHistory.push({ role: 'user', content: message });
+            chatHistory.push({ role: 'assistant', content: data.reply });
+        } else {
+            const error = await response.json();
+            addChatMessage('assistant', `抱歉，出错了：${error.detail || '请稍后重试'}`);
+        }
+    } catch (error) {
+        console.error('对话失败:', error);
+        removeChatMessage(loadingId);
+        addChatMessage('assistant', '网络错误，请稍后重试');
+    } finally {
+        btn.disabled = false;
+        chatInput.focus();
     }
 }
 
-// 工具函数
+// 添加对话消息到界面
+function addChatMessage(role, content, isLoading = false) {
+    // 隐藏欢迎语
+    const welcome = chatMessages.querySelector('.chat-welcome');
+    if (welcome) {
+        welcome.style.display = 'none';
+    }
+
+    const messageId = `msg_${Date.now()}`;
+    const messageDiv = document.createElement('div');
+    messageDiv.id = messageId;
+    messageDiv.className = `chat-message ${role}${isLoading ? ' loading' : ''}`;
+
+    const roleText = role === 'user' ? '你' : 'AI';
+    messageDiv.innerHTML = `
+        <div class="role">${roleText}</div>
+        <div class="content">${escapeHtml(content)}</div>
+    `;
+
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    return messageId;
+}
+
+// 移除对话消息
+function removeChatMessage(messageId) {
+    const message = document.getElementById(messageId);
+    if (message) {
+        message.remove();
+    }
+}
+
+// 清空对话
+function clearChat() {
+    if (!confirm('确定要刷新对话吗？当前对话记录将被清空。')) {
+        return;
+    }
+
+    chatHistory = [];
+    chatMessages.innerHTML = `
+        <div class="chat-welcome">
+            <p>我已经了解了你关于这个主题的所有想法。</p>
+            <p>有什么想和我讨论的吗？</p>
+        </div>
+    `;
+}
+
+// ========== 工具函数 ==========
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-function formatDate(isoString) {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diff = now - date;
-
-    if (diff < 60000) return '刚刚';
-    if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
-    if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
-    if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
-
-    return date.toLocaleDateString('zh-CN');
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
 }
 
-// 简单的 Markdown 转 HTML
-function markdownToHtml(md) {
-    if (!md) return '';
-    return md
+function markdownToHtml(markdown) {
+    if (!markdown) return '';
+    return markdown
         .replace(/^## (.+)$/gm, '<h3>$1</h3>')
         .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>')
-        .replace(/^/, '<p>')
-        .replace(/$/, '</p>')
-        .replace(/<p><h3>/g, '<h3>')
-        .replace(/<\/h3><\/p>/g, '</h3>')
-        .replace(/<p><ul>/g, '<ul>')
-        .replace(/<\/ul><\/p>/g, '</ul>');
+        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+        .replace(/<\/ul>\s*<ul>/g, '')
+        .replace(/\n/g, '<br>');
 }

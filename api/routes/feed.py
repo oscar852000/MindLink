@@ -8,7 +8,14 @@ from datetime import datetime
 import logging
 
 from api.services.db_service import db
-from api.services.ai_service import organize_feeds, generate_output, format_crystal_markdown, generate_clarification_questions
+from api.services.ai_service import (
+    clean_and_update_structure,
+    generate_output,
+    generate_clarification_questions,
+    generate_mindmap,
+    mindmap_to_markdown,
+    generate_narrative
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +38,7 @@ class FeedItem(BaseModel):
     """投喂项"""
     id: str
     content: str
+    cleaned_content: Optional[str] = None
     created_at: str
 
 
@@ -50,34 +58,30 @@ class OutputResponse(BaseModel):
     mind_id: str
 
 
-async def _organize_mind(mind_id: str):
-    """异步整理 Mind（后台任务）"""
+async def _process_feed(mind_id: str, feed_id: str, content: str):
+    """处理投喂：去噪 + 更新结构（后台任务）"""
     try:
         mind = db.get_mind(mind_id)
         if not mind:
             return
 
-        # 获取最近的投喂
-        feeds = db.get_feeds(mind_id, limit=10)
-        if not feeds:
-            return
-
-        # 反转列表，让旧的在前面
-        feeds = list(reversed(feeds))
-
-        # 调用整理器
-        new_crystal, summary = await organize_feeds(
-            current_crystal=mind.get("crystal"),
-            new_feeds=feeds,
+        # 调用去噪+结构更新组合器
+        cleaned_content, new_structure, summary = await clean_and_update_structure(
+            content=content,
+            current_structure=mind.get("crystal"),
             mind_title=mind["title"]
         )
 
-        # 更新数据库
-        db.update_crystal(mind_id, new_crystal, summary)
-        logger.info(f"Mind {mind_id} 整理完成: {summary}")
+        # 保存去噪内容
+        db.update_feed_cleaned(feed_id, cleaned_content)
+
+        # 更新结构
+        db.update_crystal(mind_id, new_structure, summary)
+
+        logger.info(f"Mind {mind_id} 处理完成: {summary}")
 
     except Exception as e:
-        logger.error(f"整理 Mind {mind_id} 失败: {e}")
+        logger.error(f"处理 Mind {mind_id} 失败: {e}")
 
 
 @router.post("/minds/{mind_id}/feed", response_model=FeedResponse)
@@ -91,12 +95,12 @@ async def add_feed(mind_id: str, request: FeedRequest, background_tasks: Backgro
     feed_id = f"feed_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
     db.add_feed(feed_id, mind_id, request.content)
 
-    # 异步触发整理
-    background_tasks.add_task(_organize_mind, mind_id)
+    # 异步处理：去噪 + 更新结构
+    background_tasks.add_task(_process_feed, mind_id, feed_id, request.content)
 
     return FeedResponse(
         status="ok",
-        message="已记录",
+        message="已记录，正在处理",
         feed_id=feed_id
     )
 
@@ -114,6 +118,7 @@ async def get_feeds(mind_id: str, limit: int = 20):
         FeedItem(
             id=f["id"],
             content=f["content"],
+            cleaned_content=f.get("cleaned_content"),
             created_at=f["created_at"]
         )
         for f in feeds
@@ -122,13 +127,14 @@ async def get_feeds(mind_id: str, limit: int = 20):
 
 @router.post("/minds/{mind_id}/output", response_model=OutputResponse)
 async def generate_mind_output(mind_id: str, request: OutputRequest):
-    """根据指令生成输出"""
+    """根据指令生成输出（基于去噪内容）"""
     mind = db.get_mind(mind_id)
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
-    crystal = mind.get("crystal")
-    if not crystal or not crystal.get("current_knowledge"):
+    # 获取所有去噪后的内容
+    cleaned_feeds = db.get_all_cleaned_feeds(mind_id)
+    if not cleaned_feeds:
         raise HTTPException(
             status_code=400,
             detail="Mind 还没有足够的内容，请先投喂一些想法"
@@ -136,9 +142,10 @@ async def generate_mind_output(mind_id: str, request: OutputRequest):
 
     try:
         output = await generate_output(
-            crystal=crystal,
+            cleaned_feeds=cleaned_feeds,
             instruction=request.instruction,
-            mind_title=mind["title"]
+            mind_title=mind["title"],
+            structure=mind.get("crystal")
         )
 
         # 记录输出
@@ -154,33 +161,93 @@ async def generate_mind_output(mind_id: str, request: OutputRequest):
 
 @router.post("/minds/{mind_id}/reorganize")
 async def reorganize_mind(mind_id: str):
-    """手动触发重新整理"""
+    """手动触发重新整理（已弃用，保留兼容）"""
+    # 新架构下，每次投喂都会自动处理
+    # 这个接口保留用于兼容，但实际上不需要再调用
+    return {
+        "status": "ok",
+        "message": "新架构下无需手动整理，每次投喂自动处理"
+    }
+
+
+# ========== 时间轴视图 ==========
+
+class TimelineItem(BaseModel):
+    """时间轴项"""
+    date: str
+    items: List[dict]
+
+
+class TimelineViewResponse(BaseModel):
+    """时间轴视图响应"""
+    timeline: List[TimelineItem]
+
+
+@router.get("/minds/{mind_id}/timeline-view")
+async def get_timeline_view(mind_id: str):
+    """获取时间轴视图（按日期分组的去噪记录）"""
     mind = db.get_mind(mind_id)
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
-    feeds = db.get_feeds(mind_id, limit=20)
+    feeds = db.get_all_cleaned_feeds(mind_id)
+
+    # 按日期分组
+    from collections import defaultdict
+    grouped = defaultdict(list)
+    for f in feeds:
+        date = f["created_at"][:10]  # 取日期部分
+        time = f["created_at"][11:16]  # 取时间部分
+        grouped[date].append({
+            "id": f["id"],
+            "time": time,
+            "content": f["cleaned_content"]
+        })
+
+    # 转换为列表，按日期倒序
+    timeline = [
+        {"date": date, "items": items}
+        for date, items in sorted(grouped.items(), reverse=True)
+    ]
+
+    return {"timeline": timeline}
+
+
+# ========== 叙事视图 ==========
+
+class NarrativeResponse(BaseModel):
+    """叙事视图响应"""
+    narrative: str
+    feed_count: int
+
+
+@router.post("/minds/{mind_id}/narrative")
+async def generate_narrative_view(mind_id: str):
+    """生成叙事视图（点击触发）"""
+    mind = db.get_mind(mind_id)
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    feeds = db.get_all_cleaned_feeds(mind_id)
     if not feeds:
-        raise HTTPException(status_code=400, detail="没有投喂内容")
+        return NarrativeResponse(
+            narrative="暂无内容，请先投喂一些想法",
+            feed_count=0
+        )
 
     try:
-        feeds = list(reversed(feeds))
-        new_crystal, summary = await organize_feeds(
-            current_crystal=mind.get("crystal"),
-            new_feeds=feeds,
+        narrative = await generate_narrative(
+            cleaned_feeds=feeds,
             mind_title=mind["title"]
         )
 
-        db.update_crystal(mind_id, new_crystal, summary)
-
-        return {
-            "status": "ok",
-            "summary": summary,
-            "crystal_markdown": format_crystal_markdown(new_crystal)
-        }
+        return NarrativeResponse(
+            narrative=narrative,
+            feed_count=len(feeds)
+        )
 
     except Exception as e:
-        logger.error(f"重新整理失败: {e}")
+        logger.error(f"生成叙事视图失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -269,3 +336,48 @@ async def submit_answer(mind_id: str, request: AnswerRequest, background_tasks: 
         status="ok",
         message="已记录答案"
     )
+
+
+# ========== 思维导图 ==========
+
+class MindmapResponse(BaseModel):
+    """思维导图响应"""
+    mindmap: dict  # JSON 结构
+    markdown: str  # Markmap 渲染用
+
+
+@router.get("/minds/{mind_id}/mindmap", response_model=MindmapResponse)
+async def get_mindmap(mind_id: str):
+    """获取思维导图"""
+    mind = db.get_mind(mind_id)
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    crystal = mind.get("crystal")
+    if not crystal or not crystal.get("current_knowledge"):
+        # 返回空导图
+        empty_map = {
+            "center": mind.get("title", "新想法"),
+            "branches": []
+        }
+        return MindmapResponse(
+            mindmap=empty_map,
+            markdown=f"# {mind.get('title', '新想法')}"
+        )
+
+    try:
+        mindmap = await generate_mindmap(
+            crystal=crystal,
+            mind_title=mind["title"]
+        )
+
+        markdown = mindmap_to_markdown(mindmap)
+
+        return MindmapResponse(
+            mindmap=mindmap,
+            markdown=markdown
+        )
+
+    except Exception as e:
+        logger.error(f"生成思维导图失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

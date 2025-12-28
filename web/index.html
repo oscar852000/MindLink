@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindLink</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20251228e">
+    <link rel="stylesheet" href="/static/css/style.css?v=20251228m">
 </head>
 <body>
     <div class="app">
@@ -14,6 +14,7 @@
                 <h1>MindLink</h1>
                 <p class="slogan">把想法变成可演化的记忆单元<br>把单元连接成第二大脑神经网络</p>
                 <button id="createMindBtn" class="btn-create">+ 新建 Mind</button>
+                <a href="/admin" class="admin-link">提示词管理</a>
             </div>
             <div class="mind-list" id="mindList">
                 <!-- Mind 列表动态生成 -->
@@ -37,8 +38,11 @@
                 <!-- 标签页 -->
                 <div class="tabs">
                     <button class="tab active" data-tab="feed">投喂</button>
-                    <button class="tab" data-tab="crystal">总览</button>
-                    <button class="tab" data-tab="clarify">澄清</button>
+                    <button class="tab" data-tab="chat">对话</button>
+                    <button class="tab" data-tab="timeline">时间轴</button>
+                    <button class="tab" data-tab="narrative">叙事</button>
+                    <button class="tab" data-tab="structure">结构</button>
+                    <button class="tab" data-tab="mindmap">导图</button>
                     <button class="tab" data-tab="output">输出</button>
                 </div>
 
@@ -51,21 +55,74 @@
                     <div class="feed-status" id="feedStatus"></div>
                 </div>
 
-                <!-- 总览区 -->
-                <div class="tab-content" id="crystalTab">
-                    <div class="crystal-content" id="crystalContent">
+                <!-- 对话区 -->
+                <div class="tab-content" id="chatTab">
+                    <div class="chat-header">
+                        <div class="chat-controls">
+                            <select id="chatModel" class="chat-select">
+                                <option value="google_gemini_3_flash">Gemini 3 Flash</option>
+                                <option value="google_gemini_3_pro">Gemini 3 Pro</option>
+                                <option value="plato_gpt_5_2_chat">GPT-5.2 柏拉图</option>
+                            </select>
+                            <select id="chatStyle" class="chat-select">
+                                <option value="default">理性分析</option>
+                                <option value="socratic">苏格拉底式</option>
+                                <option value="creative">创意发散</option>
+                            </select>
+                            <button id="clearChatBtn" class="btn-secondary btn-small">刷新对话</button>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-welcome">
+                            <p>我已经了解了你关于这个主题的所有想法。</p>
+                            <p>有什么想和我讨论的吗？</p>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <textarea id="chatInput" placeholder="输入你想讨论的内容..." rows="2"></textarea>
+                        <button id="sendChatBtn" class="btn-primary">发送</button>
+                    </div>
+                </div>
+
+                <!-- 时间轴区 -->
+                <div class="tab-content" id="timelineTab">
+                    <div class="timeline-header">
+                        <p>去噪后的原始记录，按时间分组显示</p>
+                    </div>
+                    <div class="timeline-content" id="timelineContent">
                         <p class="placeholder">还没有内容，先投喂一些想法吧</p>
                     </div>
                 </div>
 
-                <!-- 澄清区 -->
-                <div class="tab-content" id="clarifyTab">
-                    <div class="clarify-header">
-                        <p>让 AI 确认是否正确理解了你的想法</p>
-                        <button id="clarifyBtn" class="btn-primary">确认理解</button>
+                <!-- 叙事区 -->
+                <div class="tab-content" id="narrativeTab">
+                    <div class="narrative-header">
+                        <p>整合所有记录，生成连贯的思想叙事</p>
+                        <button id="generateNarrativeBtn" class="btn-primary">生成叙事</button>
                     </div>
-                    <div class="clarify-questions" id="clarifyQuestions">
-                        <!-- 问题卡片动态生成 -->
+                    <div class="narrative-content" id="narrativeContent">
+                        <p class="placeholder">点击"生成叙事"按钮，AI 将整合你的所有记录</p>
+                    </div>
+                </div>
+
+                <!-- 结构区 -->
+                <div class="tab-content" id="structureTab">
+                    <div class="structure-header">
+                        <p>提炼核心思想，结构化展示</p>
+                    </div>
+                    <div class="structure-content" id="structureContent">
+                        <p class="placeholder">还没有内容，先投喂一些想法吧</p>
+                    </div>
+                </div>
+
+                <!-- 导图区 -->
+                <div class="tab-content" id="mindmapTab">
+                    <div class="mindmap-header">
+                        <p>思维导图 - 基于结构视图生成</p>
+                        <button id="refreshMindmapBtn" class="btn-secondary">刷新导图</button>
+                    </div>
+                    <div class="mindmap-container" id="mindmapContainer">
+                        <p class="placeholder">点击上方"刷新导图"生成思维导图</p>
                     </div>
                 </div>
 
@@ -93,6 +150,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=20251228e"></script>
+    <script src="/static/js/app.js?v=20251228m"></script>
 </body>
 </html>

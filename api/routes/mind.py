@@ -34,9 +34,9 @@ class MindListResponse(BaseModel):
 
 
 class CrystalResponse(BaseModel):
-    """Crystal 响应"""
+    """Crystal 响应（结构视图）"""
     mind_id: str
-    crystal_markdown: str
+    structure_markdown: str  # 结构视图
     crystal_json: Optional[dict] = None
     updated_at: str
 
@@ -114,16 +114,18 @@ async def get_mind(mind_id: str):
 
 @router.get("/{mind_id}/crystal", response_model=CrystalResponse)
 async def get_crystal(mind_id: str):
-    """获取 Mind 的当前总览（Crystal）"""
+    """获取 Mind 的结构视图"""
     mind = db.get_mind(mind_id)
 
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
+    crystal = mind.get("crystal")
+
     return CrystalResponse(
         mind_id=mind_id,
-        crystal_markdown=format_crystal_markdown(mind.get("crystal")),
-        crystal_json=mind.get("crystal"),
+        structure_markdown=format_crystal_markdown(crystal),
+        crystal_json=crystal,
         updated_at=mind["updated_at"]
     )
 

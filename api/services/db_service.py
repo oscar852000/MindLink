@@ -60,10 +60,17 @@ class Database:
                     id TEXT PRIMARY KEY,
                     mind_id TEXT NOT NULL,
                     content TEXT NOT NULL,
+                    cleaned_content TEXT,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY (mind_id) REFERENCES minds(id)
                 )
             """)
+
+            # 检查并添加 cleaned_content 字段（兼容旧数据库）
+            cursor.execute("PRAGMA table_info(feed_items)")
+            columns = [col[1] for col in cursor.fetchall()]
+            if 'cleaned_content' not in columns:
+                cursor.execute("ALTER TABLE feed_items ADD COLUMN cleaned_content TEXT")
 
             # Timeline 表（事件记录）
             cursor.execute("""
@@ -87,6 +94,17 @@ class Database:
                     result TEXT,
                     created_at TEXT NOT NULL,
                     FOREIGN KEY (mind_id) REFERENCES minds(id)
+                )
+            """)
+
+            # Prompts 表（提示词管理）
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS prompts (
+                    key TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    description TEXT,
+                    updated_at TEXT NOT NULL
                 )
             """)
 
@@ -222,6 +240,34 @@ class Database:
                 "id": row["id"],
                 "mind_id": row["mind_id"],
                 "content": row["content"],
+                "cleaned_content": row["cleaned_content"],
+                "created_at": row["created_at"]
+            } for row in rows]
+
+    def update_feed_cleaned(self, feed_id: str, cleaned_content: str) -> bool:
+        """更新投喂的去噪内容"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE feed_items SET cleaned_content = ? WHERE id = ?
+            """, (cleaned_content, feed_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_all_cleaned_feeds(self, mind_id: str) -> List[Dict[str, Any]]:
+        """获取所有已去噪的投喂（用于生成叙事视图）"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, cleaned_content, created_at FROM feed_items
+                WHERE mind_id = ? AND cleaned_content IS NOT NULL
+                ORDER BY created_at ASC
+            """, (mind_id,))
+            rows = cursor.fetchall()
+
+            return [{
+                "id": row["id"],
+                "cleaned_content": row["cleaned_content"],
                 "created_at": row["created_at"]
             } for row in rows]
 
@@ -279,6 +325,55 @@ class Database:
             "instruction": instruction,
             "result": result,
             "created_at": now
+        }
+
+    # ========== Prompt 操作 ==========
+
+    def get_prompt(self, key: str) -> Optional[str]:
+        """获取提示词内容"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT content FROM prompts WHERE key = ?", (key,))
+            row = cursor.fetchone()
+            return row["content"] if row else None
+
+    def get_all_prompts(self) -> List[Dict[str, Any]]:
+        """获取所有提示词"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM prompts ORDER BY key")
+            rows = cursor.fetchall()
+            return [{
+                "key": row["key"],
+                "name": row["name"],
+                "content": row["content"],
+                "description": row["description"],
+                "updated_at": row["updated_at"]
+            } for row in rows]
+
+    def upsert_prompt(self, key: str, name: str, content: str, description: str = "") -> Dict[str, Any]:
+        """创建或更新提示词"""
+        now = datetime.now().isoformat()
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO prompts (key, name, content, description, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(key) DO UPDATE SET
+                    name = excluded.name,
+                    content = excluded.content,
+                    description = excluded.description,
+                    updated_at = excluded.updated_at
+            """, (key, name, content, description, now))
+            conn.commit()
+
+        return {
+            "key": key,
+            "name": name,
+            "content": content,
+            "description": description,
+            "updated_at": now
         }
 
 

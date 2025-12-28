@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
 
-from api.routes import mind, feed
+from api.routes import mind, feed, admin, chat
 
 # 配置日志
 logging.basicConfig(
@@ -36,6 +36,8 @@ app = FastAPI(
 # 注册路由
 app.include_router(mind.router, prefix="/api/minds", tags=["Mind"])
 app.include_router(feed.router, prefix="/api", tags=["Feed"])
+app.include_router(chat.router, prefix="/api", tags=["Chat"])
+app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 
 # 静态文件
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
@@ -45,6 +47,12 @@ app.mount("/static", StaticFiles(directory="web/static"), name="static")
 async def root():
     """首页"""
     return FileResponse("web/index.html")
+
+
+@app.get("/admin")
+async def admin():
+    """管理后台"""
+    return FileResponse("web/admin.html")
 
 
 @app.get("/health")
