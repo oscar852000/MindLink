@@ -121,8 +121,8 @@ async function loadCrystal() {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/crystal`);
         const data = await response.json();
 
-        if (data.crystal) {
-            crystalContent.innerHTML = `<div class="crystal-text">${escapeHtml(data.crystal)}</div>`;
+        if (data.crystal_markdown) {
+            crystalContent.innerHTML = `<div class="crystal-text">${markdownToHtml(data.crystal_markdown)}</div>`;
         } else {
             crystalContent.innerHTML = '<p class="placeholder">还没有内容，先投喂一些想法吧</p>';
         }
@@ -275,4 +275,21 @@ function formatDate(isoString) {
     if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
 
     return date.toLocaleDateString('zh-CN');
+}
+
+// 简单的 Markdown 转 HTML
+function markdownToHtml(md) {
+    if (!md) return '';
+    return md
+        .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^- (.+)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/^/, '<p>')
+        .replace(/$/, '</p>')
+        .replace(/<p><h3>/g, '<h3>')
+        .replace(/<\/h3><\/p>/g, '</h3>')
+        .replace(/<p><ul>/g, '<ul>')
+        .replace(/<\/ul><\/p>/g, '</ul>');
 }
