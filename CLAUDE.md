@@ -12,12 +12,19 @@
 
 > 一个只会聆听、整理、表达的超能力助手——不加见解，只让你的想法保持清醒。
 
+### 产品原则（系统铁律）
+
+1. **AI 是编辑器，不是作者** - 不妄做事实、不加个人观点
+2. **一个 Mind = 一个核心话题** - 保持唯一性与清醒度
+3. **时间覆盖权重** - 新认知更重要，但历史可追溯
+4. **确认机制慎用** - 仅在冲突时触发，避免破坏自动化手感
+
 ### 两大核心功能
 
 | 功能 | 说明 |
 |------|------|
-| **整理** | 用户不断投喂想法 → AI 持续归纳更新 → 想法始终"活着" |
-| **输出** | 一个想法 → 多种表达（给投资人/程序员/朋友） |
+| **整理（Crystallize）** | 用户投喂 → AI 归纳更新 → 想法保持"清醒" |
+| **输出（Express）** | 一个想法 → 多种表达（投资人/程序员/朋友） |
 
 ---
 
@@ -63,7 +70,56 @@
 ├── config/                 # 配置
 ├── scripts/                # 启动脚本
 └── docs/                   # 文档
+    ├── ORIGINAL_VISION.md  # 产品初心（锚点文档）
+    ├── PRODUCT_SPEC.md     # 产品规格
+    └── API_REFERENCE.md    # API 文档
 ```
+
+---
+
+## 核心数据模型
+
+| 对象 | 定义 |
+|------|------|
+| **Mind** | 一个想法档案（标题 + 核心目标） |
+| **FeedItem** | 用户投喂的原始片段 |
+| **Crystal** | Mind 的结构化清醒档案 |
+| **Timeline** | 事件时间线 |
+
+### Crystal 结构
+
+```markdown
+## 核心目标
+[一句话，保持焦点]
+
+## 当前认知
+- 要点1
+- 要点2
+
+## 亮点创意
+[细节池]
+
+## 待确认/待解决
+[模糊点]
+
+## 演变记录
+[版本化变更摘要]
+```
+
+---
+
+## 整理器（Organizer）规则
+
+| 动作 | 说明 | 是否需确认 |
+|------|------|-----------|
+| **Add** | 新增观点/信息 | 否 |
+| **Refine** | 优化表达（不改变原意） | 否 |
+| **Conflict** | 与旧认知互斥 | 是 |
+| **Obsolete** | 过期内容 | 是 |
+
+**噪声处理**：
+- 忽略：牢骚、啰嗦、重复、跑题
+- 记录：观点、认知、亮点创意
 
 ---
 
@@ -170,8 +226,8 @@ git push
 
 | 文档 | 用途 |
 |------|------|
-| [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | 产品说明文档 |
-| [docs/ORIGINAL_VISION.md](docs/ORIGINAL_VISION.md) | 用户原始想法 |
+| [docs/ORIGINAL_VISION.md](docs/ORIGINAL_VISION.md) | 产品初心（锚点） |
+| [docs/PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) | 产品规格文档 |
 | [docs/API_REFERENCE.md](docs/API_REFERENCE.md) | API 接口文档 |
 
 ---
@@ -179,13 +235,19 @@ git push
 ## 服务管理
 
 ```bash
-# 启动开发模式
+# 查看状态
+systemctl status mindlink
+
+# 重启
+systemctl restart mindlink
+
+# 查看日志
+journalctl -u mindlink -f
+
+# 开发模式
 cd /root/MindLink
 source venv/bin/activate
 uvicorn api.main:app --reload --host 0.0.0.0 --port 7003
-
-# 生产模式
-bash scripts/start.sh
 ```
 
 ---
@@ -195,8 +257,9 @@ bash scripts/start.sh
 1. **绝对不修改 /root/ai_hub 的任何代码**
 2. MindLink 只是 AI Hub 的调用方
 3. 修改核心文件前先 `git commit` 当前状态
+4. 任何迭代都应回溯 ORIGINAL_VISION.md 确保不偏离初心
 
 ---
 
-**文档版本**: v1.0
+**文档版本**: v1.1
 **最后更新**: 2024-12-28
