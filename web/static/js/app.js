@@ -250,8 +250,8 @@ async function loadClarifyQuestions() {
 
     const btn = document.getElementById('clarifyBtn');
     btn.disabled = true;
-    btn.textContent = '分析中...';
-    clarifyQuestions.innerHTML = '<p class="loading">AI 正在分析你的想法...</p>';
+    btn.textContent = '确认中...';
+    clarifyQuestions.innerHTML = '<p class="loading">AI 正在确认理解...</p>';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/clarify`, {
@@ -264,8 +264,8 @@ async function loadClarifyQuestions() {
             if (!data.has_questions || data.questions.length === 0) {
                 clarifyQuestions.innerHTML = `
                     <div class="no-questions">
-                        <p>🎉 太棒了！当前想法已经很清晰，没有需要澄清的地方。</p>
-                        <p>继续投喂更多想法，或者生成输出吧！</p>
+                        <p>✓ AI 已正确理解你的想法</p>
+                        <p>当前内容清晰，无需额外确认</p>
                     </div>
                 `;
             } else {
@@ -280,7 +280,7 @@ async function loadClarifyQuestions() {
         clarifyQuestions.innerHTML = '<p class="error">加载失败，请重试</p>';
     } finally {
         btn.disabled = false;
-        btn.textContent = '开始澄清';
+        btn.textContent = '确认理解';
     }
 }
 
