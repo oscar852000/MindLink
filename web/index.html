@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindLink</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 侧边栏：Mind 列表 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>MindLink</h1>
+                <button id="createMindBtn" class="btn-create">+ 新建 Mind</button>
+            </div>
+            <div class="mind-list" id="mindList">
+                <!-- Mind 列表动态生成 -->
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 空状态 -->
+            <div class="empty-state" id="emptyState">
+                <h2>选择或创建一个 Mind</h2>
+                <p>开始整理你的想法</p>
+            </div>
+
+            <!-- Mind 详情 -->
+            <div class="mind-detail" id="mindDetail" style="display: none;">
+                <header class="detail-header">
+                    <h2 id="mindTitle">Mind 标题</h2>
+                </header>
+
+                <!-- 标签页 -->
+                <div class="tabs">
+                    <button class="tab active" data-tab="feed">投喂</button>
+                    <button class="tab" data-tab="crystal">总览</button>
+                    <button class="tab" data-tab="output">输出</button>
+                </div>
+
+                <!-- 投喂区 -->
+                <div class="tab-content active" id="feedTab">
+                    <div class="feed-input">
+                        <textarea id="feedInput" placeholder="输入你的想法..."></textarea>
+                        <button id="feedBtn" class="btn-primary">投喂</button>
+                    </div>
+                    <div class="feed-status" id="feedStatus"></div>
+                </div>
+
+                <!-- 总览区 -->
+                <div class="tab-content" id="crystalTab">
+                    <div class="crystal-content" id="crystalContent">
+                        <p class="placeholder">还没有内容，先投喂一些想法吧</p>
+                    </div>
+                </div>
+
+                <!-- 输出区 -->
+                <div class="tab-content" id="outputTab">
+                    <div class="output-input">
+                        <input type="text" id="outputInstruction" placeholder="输入输出指令，例如：写一段给程序员的说明">
+                        <button id="outputBtn" class="btn-primary">生成</button>
+                    </div>
+                    <div class="output-result" id="outputResult"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 创建 Mind 弹窗 -->
+    <div class="modal" id="createMindModal">
+        <div class="modal-content">
+            <h3>创建新的 Mind</h3>
+            <input type="text" id="newMindTitle" placeholder="输入标题，例如：AI 想法助手">
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn-primary" onclick="createMind()">创建</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+# 环境变量
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# 数据和日志
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 备份文件（禁止使用）
+*.bak
+*.backup
