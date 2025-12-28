@@ -260,6 +260,148 @@ body {
     padding: 2rem;
 }
 
+/* 澄清区 */
+.clarify-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.clarify-header p {
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.clarify-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.clarify-questions .loading,
+.clarify-questions .error {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-secondary);
+}
+
+.clarify-questions .error {
+    color: #ff6b6b;
+}
+
+.no-questions {
+    text-align: center;
+    padding: 3rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.no-questions p:first-child {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.no-questions p:last-child {
+    color: var(--text-secondary);
+}
+
+.question-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-left: 3px solid var(--accent);
+}
+
+.question-card.answered {
+    border-left-color: var(--accent-green);
+    opacity: 0.8;
+}
+
+.question-header h4 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.question-context {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.question-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.option-btn {
+    padding: 0.5rem 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.option-custom {
+    border-style: dashed;
+    color: var(--text-secondary);
+}
+
+.option-custom:hover {
+    color: var(--accent);
+}
+
+.custom-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.custom-answer-input {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    background: var(--bg-dark);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+}
+
+.custom-answer-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.answer-result {
+    padding: 0.5rem 0;
+}
+
+.answered-question {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.answered-answer {
+    color: var(--accent-green);
+    font-weight: 500;
+}
+
 /* 输出区 */
 .output-input {
     display: flex;

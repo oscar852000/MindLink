@@ -17,6 +17,7 @@ const feedStatus = document.getElementById('feedStatus');
 const crystalContent = document.getElementById('crystalContent');
 const outputInstruction = document.getElementById('outputInstruction');
 const outputResult = document.getElementById('outputResult');
+const clarifyQuestions = document.getElementById('clarifyQuestions');
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
@@ -37,6 +38,9 @@ function setupEventListeners() {
 
     // 输出按钮
     document.getElementById('outputBtn').addEventListener('click', generateOutput);
+
+    // 澄清按钮
+    document.getElementById('clarifyBtn').addEventListener('click', loadClarifyQuestions);
 
     // 标签页切换
     document.querySelectorAll('.tab').forEach(tab => {
@@ -235,6 +239,127 @@ async function generateOutput() {
     } finally {
         btn.disabled = false;
         btn.textContent = '生成';
+    }
+}
+
+// ========== 澄清功能 ==========
+
+// 加载澄清问题
+async function loadClarifyQuestions() {
+    if (!currentMindId) return;
+
+    const btn = document.getElementById('clarifyBtn');
+    btn.disabled = true;
+    btn.textContent = '分析中...';
+    clarifyQuestions.innerHTML = '<p class="loading">AI 正在分析你的想法...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/clarify`, {
+            method: 'POST'
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (!data.has_questions || data.questions.length === 0) {
+                clarifyQuestions.innerHTML = `
+                    <div class="no-questions">
+                        <p>🎉 太棒了！当前想法已经很清晰，没有需要澄清的地方。</p>
+                        <p>继续投喂更多想法，或者生成输出吧！</p>
+                    </div>
+                `;
+            } else {
+                renderClarifyQuestions(data.questions);
+            }
+        } else {
+            const error = await response.json();
+            clarifyQuestions.innerHTML = `<p class="error">加载失败: ${error.detail || '未知错误'}</p>`;
+        }
+    } catch (error) {
+        console.error('加载澄清问题失败:', error);
+        clarifyQuestions.innerHTML = '<p class="error">加载失败，请重试</p>';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '开始澄清';
+    }
+}
+
+// 渲染澄清问题卡片
+function renderClarifyQuestions(questions) {
+    clarifyQuestions.innerHTML = questions.map((q, index) => `
+        <div class="question-card" data-index="${index}">
+            <div class="question-header">
+                <h4>${escapeHtml(q.question)}</h4>
+                ${q.context ? `<p class="question-context">${escapeHtml(q.context)}</p>` : ''}
+            </div>
+            <div class="question-options">
+                ${q.options.map(opt => `
+                    <button class="option-btn" onclick="selectOption(${index}, '${escapeHtml(opt).replace(/'/g, "\\'")}')">
+                        ${escapeHtml(opt)}
+                    </button>
+                `).join('')}
+                <button class="option-btn option-custom" onclick="showCustomInput(${index})">
+                    其他...
+                </button>
+            </div>
+            <div class="custom-input-wrapper" id="customInput${index}" style="display: none;">
+                <input type="text" placeholder="输入你的答案..." class="custom-answer-input" id="customAnswer${index}">
+                <button class="btn-primary btn-small" onclick="submitCustomAnswer(${index})">确定</button>
+            </div>
+        </div>
+    `).join('');
+
+    // 存储问题数据供后续使用
+    window.clarifyQuestionsData = questions;
+}
+
+// 选择选项
+async function selectOption(questionIndex, answer) {
+    const question = window.clarifyQuestionsData[questionIndex];
+    await submitAnswer(question.question, answer, questionIndex);
+}
+
+// 显示自定义输入
+function showCustomInput(questionIndex) {
+    const wrapper = document.getElementById(`customInput${questionIndex}`);
+    wrapper.style.display = 'flex';
+    document.getElementById(`customAnswer${questionIndex}`).focus();
+}
+
+// 提交自定义答案
+async function submitCustomAnswer(questionIndex) {
+    const input = document.getElementById(`customAnswer${questionIndex}`);
+    const answer = input.value.trim();
+    if (!answer) return;
+
+    const question = window.clarifyQuestionsData[questionIndex];
+    await submitAnswer(question.question, answer, questionIndex);
+}
+
+// 提交答案
+async function submitAnswer(question, answer, questionIndex) {
+    const card = document.querySelector(`.question-card[data-index="${questionIndex}"]`);
+    card.classList.add('answered');
+    card.innerHTML = `
+        <div class="answer-result">
+            <p class="answered-question">${escapeHtml(question)}</p>
+            <p class="answered-answer">✓ ${escapeHtml(answer)}</p>
+        </div>
+    `;
+
+    try {
+        await fetch(`${API_BASE}/minds/${currentMindId}/answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question, answer })
+        });
+
+        // 刷新 Crystal
+        await loadCrystal();
+        await loadMinds();
+
+    } catch (error) {
+        console.error('提交答案失败:', error);
     }
 }
 

@@ -8,7 +8,7 @@ from datetime import datetime
 import logging
 
 from api.services.db_service import db
-from api.services.ai_service import organize_feeds, generate_output, format_crystal_markdown
+from api.services.ai_service import organize_feeds, generate_output, format_crystal_markdown, generate_clarification_questions
 
 logger = logging.getLogger(__name__)
 
@@ -182,3 +182,90 @@ async def reorganize_mind(mind_id: str):
     except Exception as e:
         logger.error(f"重新整理失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ========== 澄清问答 ==========
+
+class ClarifyQuestion(BaseModel):
+    """澄清问题"""
+    question: str
+    context: str
+    options: List[str]
+
+
+class ClarifyResponse(BaseModel):
+    """澄清响应"""
+    has_questions: bool
+    questions: List[ClarifyQuestion]
+
+
+class AnswerRequest(BaseModel):
+    """回答请求"""
+    question: str
+    answer: str  # 可以是选项内容，也可以是自定义输入
+
+
+class AnswerResponse(BaseModel):
+    """回答响应"""
+    status: str
+    message: str
+
+
+@router.post("/minds/{mind_id}/clarify", response_model=ClarifyResponse)
+async def get_clarification_questions(mind_id: str):
+    """获取 AI 生成的澄清问题"""
+    mind = db.get_mind(mind_id)
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    crystal = mind.get("crystal")
+    if not crystal or not crystal.get("current_knowledge"):
+        return ClarifyResponse(
+            has_questions=False,
+            questions=[]
+        )
+
+    try:
+        questions = await generate_clarification_questions(
+            crystal=crystal,
+            mind_title=mind["title"]
+        )
+
+        return ClarifyResponse(
+            has_questions=len(questions) > 0,
+            questions=[
+                ClarifyQuestion(
+                    question=q["question"],
+                    context=q.get("context", ""),
+                    options=q.get("options", [])
+                )
+                for q in questions
+            ]
+        )
+
+    except Exception as e:
+        logger.error(f"生成澄清问题失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/minds/{mind_id}/answer", response_model=AnswerResponse)
+async def submit_answer(mind_id: str, request: AnswerRequest, background_tasks: BackgroundTasks):
+    """提交澄清问题的答案（自动作为投喂内容）"""
+    mind = db.get_mind(mind_id)
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    # 将问答格式化为投喂内容
+    content = f"【澄清】{request.question}\n答：{request.answer}"
+
+    # 记录投喂
+    feed_id = f"feed_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
+    db.add_feed(feed_id, mind_id, content)
+
+    # 异步触发整理
+    background_tasks.add_task(_organize_mind, mind_id)
+
+    return AnswerResponse(
+        status="ok",
+        message="已记录答案"
+    )

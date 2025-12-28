@@ -304,3 +304,120 @@ def format_crystal_markdown(crystal: Dict[str, Any]) -> str:
         sections.append(f"## 演变记录\n{items}")
 
     return "\n\n".join(sections) if sections else "还没有内容，先投喂一些想法吧"
+
+
+# ========== 澄清器 (Clarifier) ==========
+
+CLARIFIER_SYSTEM_PROMPT = """你是 MindLink 的澄清助手，负责分析用户的想法（Crystal），找出模糊或需要澄清的地方，并生成结构化的问题。
+
+## 你的角色
+- 发现 Crystal 中模糊、矛盾或缺失的信息
+- 生成精准的澄清问题
+- 为每个问题提供 2-4 个选项，帮助用户快速回答
+- 选项要具体、互斥、覆盖常见情况
+
+## 问题类型
+1. 模糊点：某个概念或决策不够清晰
+2. 缺失信息：缺少关键细节（目标用户、技术方案、优先级等）
+3. 矛盾点：两个认知之间有冲突
+4. 待确认：pending_questions 中已标记的问题
+
+## 输出格式
+必须返回 JSON 数组，每个问题包含：
+- question: 问题文本（简洁明了）
+- context: 为什么问这个问题（一句话）
+- options: 选项数组，每个选项是一个字符串
+
+示例：
+[
+    {
+        "question": "这个产品的核心用户是谁？",
+        "context": "当前认知中提到了多种用户场景，需要明确优先级",
+        "options": ["个人用户（C端）", "企业团队（B端）", "开发者/技术人员", "两者都是"]
+    }
+]
+
+规则：
+- 最多生成 3 个问题
+- 每个问题 2-4 个选项
+- 选项要简短（10字以内最佳）
+- 如果没有需要澄清的，返回空数组 []
+- 只返回 JSON，不要其他内容"""
+
+
+async def generate_clarification_questions(
+    crystal: Dict[str, Any],
+    mind_title: str
+) -> List[Dict[str, Any]]:
+    """
+    分析 Crystal 生成澄清问题
+
+    Args:
+        crystal: 当前 Crystal 内容
+        mind_title: Mind 标题
+
+    Returns:
+        问题列表，每个问题包含 question, context, options
+    """
+    if not crystal or not crystal.get("current_knowledge"):
+        return []
+
+    crystal_text = f"""## 核心目标
+{crystal.get('core_goal', '未设定')}
+
+## 当前认知
+{chr(10).join(['- ' + k for k in crystal.get('current_knowledge', [])])}
+
+## 亮点创意
+{chr(10).join(['- ' + h for h in crystal.get('highlights', [])])}
+
+## 待确认问题
+{chr(10).join(['- ' + q for q in crystal.get('pending_questions', [])])}
+"""
+
+    user_prompt = f"""## Mind 标题
+{mind_title}
+
+## 当前想法内容（Crystal）
+{crystal_text}
+
+请分析以上内容，找出需要用户澄清的地方，生成结构化问题。只返回 JSON 数组。"""
+
+    messages = [
+        {"role": "system", "content": CLARIFIER_SYSTEM_PROMPT},
+        {"role": "user", "content": user_prompt}
+    ]
+
+    try:
+        result = await call_ai(messages, thinking_level="medium")
+
+        # 处理可能的 markdown 代码块
+        if "```json" in result:
+            result = result.split("```json")[1].split("```")[0]
+        elif "```" in result:
+            result = result.split("```")[1].split("```")[0]
+
+        questions = json.loads(result.strip())
+
+        # 确保返回的是列表
+        if not isinstance(questions, list):
+            return []
+
+        # 验证每个问题的结构
+        valid_questions = []
+        for q in questions[:3]:  # 最多3个问题
+            if isinstance(q, dict) and "question" in q and "options" in q:
+                valid_questions.append({
+                    "question": q.get("question", ""),
+                    "context": q.get("context", ""),
+                    "options": q.get("options", [])[:4]  # 最多4个选项
+                })
+
+        return valid_questions
+
+    except json.JSONDecodeError as e:
+        logger.error(f"澄清问题 JSON 解析失败: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"生成澄清问题失败: {e}")
+        raise

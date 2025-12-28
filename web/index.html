@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MindLink</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20251228b">
+    <link rel="stylesheet" href="/static/css/style.css?v=20251228c">
 </head>
 <body>
     <div class="app">
@@ -38,6 +38,7 @@
                 <div class="tabs">
                     <button class="tab active" data-tab="feed">投喂</button>
                     <button class="tab" data-tab="crystal">总览</button>
+                    <button class="tab" data-tab="clarify">澄清</button>
                     <button class="tab" data-tab="output">输出</button>
                 </div>
 
@@ -54,6 +55,17 @@
                 <div class="tab-content" id="crystalTab">
                     <div class="crystal-content" id="crystalContent">
                         <p class="placeholder">还没有内容，先投喂一些想法吧</p>
+                    </div>
+                </div>
+
+                <!-- 澄清区 -->
+                <div class="tab-content" id="clarifyTab">
+                    <div class="clarify-header">
+                        <p>让 AI 分析你的想法，找出需要澄清的地方</p>
+                        <button id="clarifyBtn" class="btn-primary">开始澄清</button>
+                    </div>
+                    <div class="clarify-questions" id="clarifyQuestions">
+                        <!-- 问题卡片动态生成 -->
                     </div>
                 </div>
 
@@ -81,6 +93,6 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=20251228b"></script>
+    <script src="/static/js/app.js?v=20251228c"></script>
 </body>
 </html>
