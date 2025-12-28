@@ -300,13 +300,24 @@ body {
     border-radius: 8px;
 }
 
-.no-questions p:first-child {
+.no-questions p:first-child,
+.clarify-complete p:first-child {
     font-size: 1.2rem;
     margin-bottom: 0.5rem;
+    color: var(--accent-green);
 }
 
-.no-questions p:last-child {
+.no-questions p:last-child,
+.clarify-complete p:last-child {
     color: var(--text-secondary);
+}
+
+.clarify-complete {
+    text-align: center;
+    padding: 3rem;
+    background: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--accent-green);
 }
 
 .question-card {

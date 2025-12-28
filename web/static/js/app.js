@@ -94,6 +94,14 @@ async function loadMinds() {
 async function selectMind(mindId) {
     currentMindId = mindId;
 
+    // 重置澄清状态
+    clarifyState = { questions: [], answeredCount: 0 };
+    const clarifyBtn = document.getElementById('clarifyBtn');
+    clarifyBtn.style.display = 'block';
+    clarifyBtn.disabled = false;
+    clarifyBtn.textContent = '确认理解';
+    clarifyQuestions.innerHTML = '';
+
     // 更新列表选中状态
     document.querySelectorAll('.mind-item').forEach(item => {
         item.classList.toggle('active', item.dataset.mindId === mindId);
@@ -244,6 +252,12 @@ async function generateOutput() {
 
 // ========== 澄清功能 ==========
 
+// 当前会话的问题状态
+let clarifyState = {
+    questions: [],
+    answeredCount: 0
+};
+
 // 加载澄清问题
 async function loadClarifyQuestions() {
     if (!currentMindId) return;
@@ -268,17 +282,23 @@ async function loadClarifyQuestions() {
                         <p>当前内容清晰，无需额外确认</p>
                     </div>
                 `;
+                btn.textContent = '已理解';
+                btn.disabled = true;
             } else {
+                clarifyState.questions = data.questions;
+                clarifyState.answeredCount = 0;
                 renderClarifyQuestions(data.questions);
+                btn.style.display = 'none'; // 隐藏按钮，让用户专注于回答问题
             }
         } else {
             const error = await response.json();
             clarifyQuestions.innerHTML = `<p class="error">加载失败: ${error.detail || '未知错误'}</p>`;
+            btn.disabled = false;
+            btn.textContent = '确认理解';
         }
     } catch (error) {
         console.error('加载澄清问题失败:', error);
         clarifyQuestions.innerHTML = '<p class="error">加载失败，请重试</p>';
-    } finally {
         btn.disabled = false;
         btn.textContent = '确认理解';
     }
@@ -347,12 +367,32 @@ async function submitAnswer(question, answer, questionIndex) {
         </div>
     `;
 
+    // 更新已回答计数
+    clarifyState.answeredCount++;
+
     try {
         await fetch(`${API_BASE}/minds/${currentMindId}/answer`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question, answer })
         });
+
+        // 检查是否所有问题都已回答
+        if (clarifyState.answeredCount >= clarifyState.questions.length) {
+            // 所有问题已回答，显示完成状态
+            setTimeout(() => {
+                clarifyQuestions.innerHTML = `
+                    <div class="clarify-complete">
+                        <p>✓ 确认完成</p>
+                        <p>AI 已记录你的澄清，想法已更新</p>
+                    </div>
+                `;
+                const btn = document.getElementById('clarifyBtn');
+                btn.style.display = 'block';
+                btn.textContent = '已理解';
+                btn.disabled = true;
+            }, 500);
+        }
 
         // 刷新 Crystal
         await loadCrystal();
