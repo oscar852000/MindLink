@@ -48,7 +48,15 @@ body {
     background: linear-gradient(90deg, var(--accent), var(--accent-green));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+.slogan {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
     margin-bottom: 1rem;
+    opacity: 0.8;
 }
 
 .btn-create {
@@ -216,7 +224,34 @@ body {
     padding: 1.5rem;
     border-radius: 8px;
     line-height: 1.8;
-    white-space: pre-wrap;
+}
+
+.crystal-content h3 {
+    color: var(--accent);
+    font-size: 1rem;
+    margin: 1.5rem 0 0.75rem 0;
+}
+
+.crystal-content h3:first-child {
+    margin-top: 0;
+}
+
+.crystal-content ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.crystal-content li {
+    padding: 0.25rem 0;
+    padding-left: 1.25rem;
+    position: relative;
+}
+
+.crystal-content li::before {
+    content: "•";
+    color: var(--accent-green);
+    position: absolute;
+    left: 0;
 }
 
 .crystal-content .placeholder {

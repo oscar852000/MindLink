@@ -73,6 +73,7 @@ async function loadMinds() {
         data.minds.forEach(mind => {
             const item = document.createElement('div');
             item.className = 'mind-item' + (mind.id === currentMindId ? ' active' : '');
+            item.dataset.mindId = mind.id;
             item.innerHTML = `
                 <h3>${escapeHtml(mind.title)}</h3>
                 <span class="date">${formatDate(mind.updated_at)}</span>
@@ -91,9 +92,8 @@ async function selectMind(mindId) {
 
     // 更新列表选中状态
     document.querySelectorAll('.mind-item').forEach(item => {
-        item.classList.remove('active');
+        item.classList.toggle('active', item.dataset.mindId === mindId);
     });
-    event.currentTarget?.classList.add('active');
 
     // 显示详情
     emptyState.style.display = 'none';
