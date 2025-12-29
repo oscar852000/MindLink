@@ -1,6 +1,7 @@
 """
 AI 服务 - 调用 AI Hub 实现整理和输出
 """
+import copy
 import httpx
 import json
 import logging
@@ -159,7 +160,7 @@ async def clean_and_update_structure(
         data = json.loads(result.strip())
 
         cleaned_content = data.get("cleaned_content", content)
-        structure = data.get("structure", CRYSTAL_TEMPLATE.copy())
+        structure = data.get("structure", copy.deepcopy(CRYSTAL_TEMPLATE))
         summary = data.get("summary", "已整理")
 
         # 确保结构字段完整
@@ -172,7 +173,7 @@ async def clean_and_update_structure(
     except json.JSONDecodeError as e:
         logger.error(f"JSON 解析失败: {e}")
         # 返回原内容和空结构
-        return content, current_structure or CRYSTAL_TEMPLATE.copy(), "解析失败"
+        return content, current_structure or copy.deepcopy(CRYSTAL_TEMPLATE), "解析失败"
 
     except Exception as e:
         logger.error(f"去噪失败: {e}")
@@ -298,13 +299,14 @@ async def generate_output(
     # 添加结构参考（如果有）
     structure_ref = ""
     if structure and structure.get("core_goal"):
+        knowledge_list = '\n'.join(['- ' + k for k in structure.get('current_knowledge', [])])
         structure_ref = f"""
 
 ## 核心目标（参考）
 {structure.get('core_goal', '')}
 
 ## 要点（参考）
-{chr(10).join(['- ' + k for k in structure.get('current_knowledge', [])])}"""
+{knowledge_list}"""
 
     user_prompt = f"""## Mind 标题
 {mind_title}
@@ -426,17 +428,22 @@ async def generate_mindmap(
     # 从数据库获取提示词，如果没有则使用默认值
     system_prompt = get_prompt("mindmapper", MINDMAPPER_SYSTEM_PROMPT)
 
+    # 预处理列表为字符串
+    knowledge_lines = '\n'.join(['- ' + k for k in crystal.get('current_knowledge', [])])
+    highlights_lines = '\n'.join(['- ' + h for h in crystal.get('highlights', [])])
+    pending_lines = '\n'.join(['- ' + q for q in crystal.get('pending_notes', [])])
+
     crystal_text = f"""## 核心目标
 {crystal.get('core_goal', '未设定')}
 
 ## 当前认知
-{chr(10).join(['- ' + k for k in crystal.get('current_knowledge', [])])}
+{knowledge_lines}
 
 ## 亮点创意
-{chr(10).join(['- ' + h for h in crystal.get('highlights', [])])}
+{highlights_lines}
 
 ## 待定事项
-{chr(10).join(['- ' + q for q in crystal.get('pending_notes', [])])}
+{pending_lines}
 """
 
     user_prompt = f"""## Mind 标题
@@ -560,14 +567,18 @@ async def generate_clarification_questions(
     # 从数据库获取提示词，如果没有则使用默认值
     system_prompt = get_prompt("clarifier", CLARIFIER_SYSTEM_PROMPT)
 
+    # 预处理列表为字符串
+    knowledge_lines = '\n'.join(['- ' + k for k in crystal.get('current_knowledge', [])])
+    highlights_lines = '\n'.join(['- ' + h for h in crystal.get('highlights', [])])
+
     crystal_text = f"""## 核心目标
 {crystal.get('core_goal', '未设定')}
 
 ## 当前认知
-{chr(10).join(['- ' + k for k in crystal.get('current_knowledge', [])])}
+{knowledge_lines}
 
 ## 亮点创意
-{chr(10).join(['- ' + h for h in crystal.get('highlights', [])])}
+{highlights_lines}
 """
 
     user_prompt = f"""## Mind 标题

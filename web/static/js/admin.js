@@ -5,15 +5,30 @@ const API_BASE = '/api/admin';
 let currentPromptKey = null;
 let prompts = [];
 
+// HTML 转义函数 - 防止 XSS
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     loadPrompts();
+
+    // 绑定按钮事件
+    document.getElementById('resetPromptBtn').addEventListener('click', resetPrompt);
+    document.getElementById('savePromptBtn').addEventListener('click', savePrompt);
 });
 
 // 加载提示词列表
 async function loadPrompts() {
     try {
         const response = await fetch(`${API_BASE}/prompts`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
         prompts = data.prompts;
         renderPromptList();
@@ -34,9 +49,10 @@ function renderPromptList() {
 
     container.innerHTML = prompts.map(p => `
         <div class="prompt-item ${p.key === currentPromptKey ? 'active' : ''}"
-             onclick="selectPrompt('${p.key}')">
-            <h3>${p.name}</h3>
-            <p>${p.description || '无描述'}</p>
+             data-key="${escapeHtml(p.key)}"
+             onclick="selectPrompt('${escapeHtml(p.key)}')">
+            <h3>${escapeHtml(p.name)}</h3>
+            <p>${escapeHtml(p.description) || '无描述'}</p>
             <div class="updated">更新于: ${formatTime(p.updated_at)}</div>
         </div>
     `).join('');
@@ -52,8 +68,10 @@ function selectPrompt(key) {
     // 更新列表选中状态
     document.querySelectorAll('.prompt-item').forEach(item => {
         item.classList.remove('active');
+        if (item.dataset.key === key) {
+            item.classList.add('active');
+        }
     });
-    event.currentTarget.classList.add('active');
 
     // 显示编辑器
     const editor = document.getElementById('promptEditor');

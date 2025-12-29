@@ -1,6 +1,8 @@
 """
 MindLink API - 主入口
 """
+import os
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -8,6 +10,10 @@ from contextlib import asynccontextmanager
 import logging
 
 from api.routes import mind, feed, admin, chat
+
+# 项目根目录（api 目录的父目录）
+BASE_DIR = Path(__file__).resolve().parent.parent
+WEB_DIR = BASE_DIR / "web"
 
 # 配置日志
 logging.basicConfig(
@@ -40,19 +46,19 @@ app.include_router(chat.router, prefix="/api", tags=["Chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 
 # 静态文件
-app.mount("/static", StaticFiles(directory="web/static"), name="static")
+app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
 
 @app.get("/")
 async def root():
     """首页"""
-    return FileResponse("web/index.html")
+    return FileResponse(str(WEB_DIR / "index.html"))
 
 
 @app.get("/admin")
 async def admin():
     """管理后台"""
-    return FileResponse("web/admin.html")
+    return FileResponse(str(WEB_DIR / "admin.html"))
 
 
 @app.get("/health")

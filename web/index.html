@@ -152,8 +152,8 @@
             <p style="font-size: 13px; color: var(--text-dim);">为一个新的话题、项目或思考方向命名</p>
             <input type="text" id="newMindTitle" data-logic-id="new-mind-title-input" placeholder="例如：我的 2024 产品观">
             <div data-logic-id="modal-actions">
-                <button data-logic-id="modal-cancel-button" onclick="closeModal()">取消</button>
-                <button data-logic-id="modal-create-button" onclick="createMind()">创建档案</button>
+                <button id="modalCancelBtn" data-logic-id="modal-cancel-button">取消</button>
+                <button id="modalCreateBtn" data-logic-id="modal-create-button">创建档案</button>
             </div>
         </div>
     </dialog>

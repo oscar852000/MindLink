@@ -1,6 +1,7 @@
 """
 Feed 路由 - 投喂和输出
 """
+from collections import defaultdict
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional, List
@@ -182,7 +183,6 @@ async def get_timeline_view(mind_id: str):
     feeds = db.get_all_cleaned_feeds(mind_id)
 
     # 按日期分组
-    from collections import defaultdict
     grouped = defaultdict(list)
     for f in feeds:
         date = f["created_at"][:10]  # 取日期部分

@@ -41,6 +41,10 @@ function setupEventListeners() {
         document.getElementById('newMindTitle').focus();
     });
 
+    // 模态框按钮
+    document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+    document.getElementById('modalCreateBtn').addEventListener('click', createMind);
+
     // 移动端返回按钮 - 返回列表
     const mobileBackBtn = document.getElementById('mobileBackBtn');
     if (mobileBackBtn) {
@@ -112,6 +116,9 @@ function setupEventListeners() {
 async function loadMinds() {
     try {
         const response = await fetch(`${API_BASE}/minds`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
 
         mindList.innerHTML = '';
@@ -176,6 +183,9 @@ async function selectMind(mindId) {
     // 加载详情
     try {
         const response = await fetch(`${API_BASE}/minds/${mindId}`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const mind = await response.json();
         mindTitle.textContent = mind.title;
 
@@ -195,6 +205,9 @@ async function loadTimeline() {
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/timeline-view`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
 
         if (!data.timeline || data.timeline.length === 0) {
@@ -229,6 +242,9 @@ async function loadStructure() {
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/crystal`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
 
         if (!data.structure_markdown || data.structure_markdown === '还没有内容，先投喂一些想法吧') {
@@ -386,6 +402,9 @@ async function loadMindmap() {
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/mindmap`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const data = await response.json();
 
         if (data.mindmap && data.mindmap.branches && data.mindmap.branches.length > 0) {
