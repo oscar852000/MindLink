@@ -5,57 +5,11 @@ import httpx
 import logging
 from typing import List, Dict, Any, Optional
 
+from api.config import AI_HUB_URL, AVAILABLE_MODELS, AVAILABLE_STYLES
 from api.services.db_service import db
 from api.services.ai_service import format_crystal_markdown
 
 logger = logging.getLogger(__name__)
-
-# AI Hub 配置
-AI_HUB_URL = "http://localhost:8000"
-
-# 可用模型配置
-AVAILABLE_MODELS = [
-    {
-        "id": "google_gemini_3_flash",
-        "name": "Gemini 3 Flash",
-        "description": "快速响应，适合日常对话",
-        "thinking_level": "medium"
-    },
-    {
-        "id": "google_gemini_3_pro",
-        "name": "Gemini 3 Pro",
-        "description": "深度思考，适合复杂分析",
-        "thinking_level": "high"
-    },
-    {
-        "id": "plato_gpt_5_2_chat",
-        "name": "GPT-5.2 柏拉图",
-        "description": "最强推理能力",
-        "thinking_level": None
-    }
-]
-
-# 可用风格配置
-AVAILABLE_STYLES = [
-    {
-        "id": "default",
-        "name": "理性分析",
-        "description": "客观、有条理地分析问题",
-        "prompt_key": "chat_style_default"
-    },
-    {
-        "id": "socratic",
-        "name": "苏格拉底式",
-        "description": "多反问，引导深入思考",
-        "prompt_key": "chat_style_socratic"
-    },
-    {
-        "id": "creative",
-        "name": "创意发散",
-        "description": "联想丰富，开放性强",
-        "prompt_key": "chat_style_creative"
-    }
-]
 
 # 默认提示词
 DEFAULT_PROMPTS = {

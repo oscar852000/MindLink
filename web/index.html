@@ -1,155 +1,164 @@
 <!DOCTYPE html>
 <html lang="zh">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindLink</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20251228m">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MindLink - 持续清醒的第二大脑</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=20251229c">
 </head>
+
 <body>
-    <div class="app">
-        <!-- 侧边栏：Mind 列表 -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
+    <div data-logic-id="app-container">
+        <!-- 移动端遮罩层 -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <!-- Sidebar: Mind List -->
+        <aside data-logic-id="sidebar">
+            <nav data-logic-id="sidebar-header">
                 <h1>MindLink</h1>
-                <p class="slogan">把想法变成可演化的记忆单元<br>把单元连接成第二大脑神经网络</p>
-                <button id="createMindBtn" class="btn-create">+ 新建 Mind</button>
-                <a href="/admin" class="admin-link">提示词管理</a>
-            </div>
-            <div class="mind-list" id="mindList">
-                <!-- Mind 列表动态生成 -->
-            </div>
+                <p>把想法变成可演化的记忆单元<br>把单元连接成第二大脑神经网络</p>
+                <button id="createMindBtn" data-logic-id="create-mind-button">+ 新建 Mind</button>
+                <a href="/admin" data-logic-id="admin-link">提示词管理</a>
+            </nav>
+            <section id="mindList" data-logic-id="mind-list">
+                <!-- Dynamically populated Mind list -->
+            </section>
         </aside>
 
-        <!-- 主内容区 -->
-        <main class="main-content">
-            <!-- 空状态 -->
-            <div class="empty-state" id="emptyState">
+        <!-- Main Content Area -->
+        <main data-logic-id="main-content">
+            <!-- Empty State -->
+            <section id="emptyState" data-logic-id="empty-state">
+                <button id="emptyStateMenuBtn" class="empty-state-menu-btn">☰ 打开菜单</button>
+                <div style="font-size: 64px; margin-bottom: 20px; opacity: 0.2;">✧</div>
                 <h2>选择或创建一个 Mind</h2>
-                <p>开始整理你的想法</p>
-            </div>
+                <p>开始整理你的碎碎念与洞察</p>
+            </section>
 
-            <!-- Mind 详情 -->
-            <div class="mind-detail" id="mindDetail" style="display: none;">
-                <header class="detail-header">
+            <!-- Mind Detail View -->
+            <section id="mindDetail" data-logic-id="mind-detail" style="display: none;">
+                <header data-logic-id="detail-header">
+                    <button id="mobileBackBtn" class="mobile-back-btn">← 返回</button>
                     <h2 id="mindTitle">Mind 标题</h2>
                 </header>
 
-                <!-- 标签页 -->
-                <div class="tabs">
-                    <button class="tab active" data-tab="feed">投喂</button>
-                    <button class="tab" data-tab="chat">对话</button>
-                    <button class="tab" data-tab="timeline">时间轴</button>
-                    <button class="tab" data-tab="narrative">叙事</button>
-                    <button class="tab" data-tab="structure">结构</button>
-                    <button class="tab" data-tab="mindmap">导图</button>
-                    <button class="tab" data-tab="output">输出</button>
-                </div>
+                <!-- Tab Navigation -->
+                <nav data-logic-id="tabs">
+                    <button data-tab="feed" data-logic-id="tab-feed">投喂</button>
+                    <button data-tab="structure" data-logic-id="tab-structure">结构</button>
+                    <button data-tab="timeline" data-logic-id="tab-timeline">时间轴</button>
+                    <button data-tab="chat" data-logic-id="tab-chat">对话</button>
+                    <button data-tab="narrative" data-logic-id="tab-narrative">叙事</button>
+                    <button data-tab="mindmap" data-logic-id="tab-mindmap">导图</button>
+                    <button data-tab="output" data-logic-id="tab-output">输出</button>
+                </nav>
 
-                <!-- 投喂区 -->
-                <div class="tab-content active" id="feedTab">
-                    <div class="feed-input">
-                        <textarea id="feedInput" placeholder="输入你的想法..."></textarea>
-                        <button id="feedBtn" class="btn-primary">投喂</button>
+                <!-- Tab 1: Feed (投喂) -->
+                <section id="feedTab" data-logic-id="feed-tab-content">
+                    <div data-logic-id="feed-input-area">
+                        <textarea id="feedInput" data-logic-id="feed-input"
+                            placeholder="想到什么写什么，AI 会自动去噪处理..."></textarea>
+                        <button id="feedBtn" data-logic-id="feed-submit-button">记录思想</button>
                     </div>
-                    <div class="feed-status" id="feedStatus"></div>
-                </div>
+                    <div id="feedStatus" data-logic-id="feed-status"></div>
+                </section>
 
-                <!-- 对话区 -->
-                <div class="tab-content" id="chatTab">
-                    <div class="chat-header">
-                        <div class="chat-controls">
-                            <select id="chatModel" class="chat-select">
-                                <option value="google_gemini_3_flash">Gemini 3 Flash</option>
-                                <option value="google_gemini_3_pro">Gemini 3 Pro</option>
-                                <option value="plato_gpt_5_2_chat">GPT-5.2 柏拉图</option>
-                            </select>
-                            <select id="chatStyle" class="chat-select">
-                                <option value="default">理性分析</option>
-                                <option value="socratic">苏格拉底式</option>
-                                <option value="creative">创意发散</option>
-                            </select>
-                            <button id="clearChatBtn" class="btn-secondary btn-small">刷新对话</button>
-                        </div>
-                    </div>
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="chat-welcome">
+                <!-- Tab 2: Chat (对话) -->
+                <section id="chatTab" data-logic-id="chat-tab-content" style="display: none;">
+                    <header data-logic-id="chat-controls">
+                        <select id="chatModel" data-logic-id="chat-model-select">
+                            <option value="google_gemini_3_flash">Gemini 3 Flash</option>
+                            <option value="google_gemini_3_pro">Gemini 3 Pro</option>
+                            <option value="plato_gpt_5_2_chat">GPT-5.2 Plato</option>
+                        </select>
+                        <select id="chatStyle" data-logic-id="chat-style-select">
+                            <option value="default">理性分析</option>
+                            <option value="socratic">苏格拉底式</option>
+                            <option value="creative">创意发散</option>
+                        </select>
+                        <button id="clearChatBtn" data-logic-id="chat-clear-button">刷新</button>
+                    </header>
+                    <div id="chatMessages" data-logic-id="chat-messages-container">
+                        <div data-logic-id="chat-welcome">
                             <p>我已经了解了你关于这个主题的所有想法。</p>
                             <p>有什么想和我讨论的吗？</p>
                         </div>
                     </div>
-                    <div class="chat-input-area">
-                        <textarea id="chatInput" placeholder="输入你想讨论的内容..." rows="2"></textarea>
-                        <button id="sendChatBtn" class="btn-primary">发送</button>
+                    <div data-logic-id="chat-input-area">
+                        <textarea id="chatInput" data-logic-id="chat-input" placeholder="输入你想讨论的内容..."
+                            rows="1"></textarea>
+                        <button id="sendChatBtn" data-logic-id="chat-send-button">↑</button>
                     </div>
-                </div>
+                </section>
 
-                <!-- 时间轴区 -->
-                <div class="tab-content" id="timelineTab">
-                    <div class="timeline-header">
-                        <p>去噪后的原始记录，按时间分组显示</p>
-                    </div>
-                    <div class="timeline-content" id="timelineContent">
-                        <p class="placeholder">还没有内容，先投喂一些想法吧</p>
-                    </div>
-                </div>
+                <!-- Tab 3: Timeline (时间轴) -->
+                <section id="timelineTab" data-logic-id="timeline-tab-content" style="display: none;">
+                    <header data-logic-id="timeline-header"
+                        style="margin-bottom: 24px; color: var(--text-dim); font-size: 14px;">
+                        去噪后的原始记录，按时间轴回溯
+                    </header>
+                    <div id="timelineContent" data-logic-id="timeline-content"></div>
+                </section>
 
-                <!-- 叙事区 -->
-                <div class="tab-content" id="narrativeTab">
-                    <div class="narrative-header">
-                        <p>整合所有记录，生成连贯的思想叙事</p>
-                        <button id="generateNarrativeBtn" class="btn-primary">生成叙事</button>
-                    </div>
-                    <div class="narrative-content" id="narrativeContent">
-                        <p class="placeholder">点击"生成叙事"按钮，AI 将整合你的所有记录</p>
-                    </div>
-                </div>
+                <!-- Tab 4: Narrative (叙事) -->
+                <section id="narrativeTab" data-logic-id="narrative-tab-content" style="display: none;">
+                    <header data-logic-id="narrative-header" style="margin-bottom: 32px;">
+                        <p style="color: var(--text-dim)">整合所有记录，生成连贯的思想叙事</p>
+                        <button id="generateNarrativeBtn" data-logic-id="narrative-generate-button"
+                            style="background: var(--bg-card); border: 1px solid var(--border); color: #fff; padding: 10px 20px; border-radius: 12px; cursor: pointer;">生成叙事</button>
+                    </header>
+                    <div id="narrativeContent" data-logic-id="narrative-content"></div>
+                </section>
 
-                <!-- 结构区 -->
-                <div class="tab-content" id="structureTab">
-                    <div class="structure-header">
-                        <p>提炼核心思想，结构化展示</p>
-                    </div>
-                    <div class="structure-content" id="structureContent">
-                        <p class="placeholder">还没有内容，先投喂一些想法吧</p>
-                    </div>
-                </div>
+                <!-- Tab 5: Structure (结构) -->
+                <section id="structureTab" data-logic-id="structure-tab-content" style="display: none;">
+                    <header data-logic-id="structure-header" style="margin-bottom: 24px; color: var(--text-dim);">
+                        提炼核心认知，结构化展示
+                    </header>
+                    <div id="structureContent" data-logic-id="structure-content"></div>
+                </section>
 
-                <!-- 导图区 -->
-                <div class="tab-content" id="mindmapTab">
-                    <div class="mindmap-header">
-                        <p>思维导图 - 基于结构视图生成</p>
-                        <button id="refreshMindmapBtn" class="btn-secondary">刷新导图</button>
-                    </div>
-                    <div class="mindmap-container" id="mindmapContainer">
-                        <p class="placeholder">点击上方"刷新导图"生成思维导图</p>
-                    </div>
-                </div>
+                <!-- Tab 6: Mindmap (导图) -->
+                <section id="mindmapTab" data-logic-id="mindmap-tab-content" style="display: none;">
+                    <header data-logic-id="mindmap-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                        <p style="color: var(--text-dim)">可视化思维结构</p>
+                        <button id="refreshMindmapBtn" data-logic-id="mindmap-refresh-button"
+                            style="background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 16px; border-radius: 10px; cursor: pointer;">刷新导图</button>
+                    </header>
+                    <div id="mindmapContainer" data-logic-id="mindmap-container"></div>
+                </section>
 
-                <!-- 输出区 -->
-                <div class="tab-content" id="outputTab">
-                    <div class="output-input">
-                        <input type="text" id="outputInstruction" placeholder="输入输出指令，例如：写一段给程序员的说明">
-                        <button id="outputBtn" class="btn-primary">生成</button>
+                <!-- Tab 7: Output (输出) -->
+                <section id="outputTab" data-logic-id="output-tab-content" style="display: none;">
+                    <div data-logic-id="output-input-area" style="display: flex; gap: 12px; margin-bottom: 32px;">
+                        <input type="text" id="outputInstruction" data-logic-id="output-instruction-input"
+                            placeholder="例如：写一段给投资人看的说明"
+                            style="flex: 1; background: var(--bg-card); border: 1px solid var(--border); color: #fff; padding: 14px; border-radius: 12px;">
+                        <button id="outputBtn" data-logic-id="output-generate-button"
+                            style="background: var(--primary); color: var(--bg-deep); border: none; padding: 0 24px; border-radius: 12px; font-weight: bold; cursor: pointer;">生成</button>
                     </div>
-                    <div class="output-result" id="outputResult"></div>
-                </div>
-            </div>
+                    <div id="outputResult" data-logic-id="output-result"></div>
+                </section>
+            </section>
         </main>
     </div>
 
-    <!-- 创建 Mind 弹窗 -->
-    <div class="modal" id="createMindModal">
-        <div class="modal-content">
-            <h3>创建新的 Mind</h3>
-            <input type="text" id="newMindTitle" placeholder="输入标题，例如：AI 想法助手">
-            <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeModal()">取消</button>
-                <button class="btn-primary" onclick="createMind()">创建</button>
+    <!-- Modal: Create Mind -->
+    <dialog id="createMindModal" data-logic-id="create-mind-modal">
+        <div data-logic-id="modal-content">
+            <h3 style="margin-top: 0;">创建新的 Mind</h3>
+            <p style="font-size: 13px; color: var(--text-dim);">为一个新的话题、项目或思考方向命名</p>
+            <input type="text" id="newMindTitle" data-logic-id="new-mind-title-input" placeholder="例如：我的 2024 产品观">
+            <div data-logic-id="modal-actions">
+                <button data-logic-id="modal-cancel-button" onclick="closeModal()">取消</button>
+                <button data-logic-id="modal-create-button" onclick="createMind()">创建档案</button>
             </div>
         </div>
-    </div>
+    </dialog>
 
-    <script src="/static/js/app.js?v=20251228m"></script>
+    <script src="/static/js/app.js?v=20251229a"></script>
 </body>
+
 </html>

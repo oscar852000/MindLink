@@ -29,15 +29,41 @@ const chatStyle = document.getElementById('chatStyle');
 document.addEventListener('DOMContentLoaded', () => {
     loadMinds();
     setupEventListeners();
+    // 默认激活第一个Tab
+    switchTab('feed');
 });
 
 // 设置事件监听
 function setupEventListeners() {
     // 创建 Mind 按钮
     document.getElementById('createMindBtn').addEventListener('click', () => {
-        document.getElementById('createMindModal').classList.add('show');
+        document.getElementById('createMindModal').showModal();
         document.getElementById('newMindTitle').focus();
     });
+
+    // 移动端返回按钮 - 返回列表
+    const mobileBackBtn = document.getElementById('mobileBackBtn');
+    if (mobileBackBtn) {
+        mobileBackBtn.addEventListener('click', () => {
+            goBackToList();
+        });
+    }
+
+    // 移动端空状态菜单按钮
+    const emptyStateMenuBtn = document.getElementById('emptyStateMenuBtn');
+    if (emptyStateMenuBtn) {
+        emptyStateMenuBtn.addEventListener('click', () => {
+            document.querySelector('[data-logic-id="app-container"]').classList.toggle('sidebar-open');
+        });
+    }
+
+    // 移动端遮罩层点击关闭侧边栏
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', () => {
+            document.querySelector('[data-logic-id="app-container"]').classList.remove('sidebar-open');
+        });
+    }
 
     // 投喂按钮
     document.getElementById('feedBtn').addEventListener('click', submitFeed);
@@ -56,7 +82,7 @@ function setupEventListeners() {
     document.getElementById('clearChatBtn').addEventListener('click', clearChat);
 
     // 标签页切换
-    document.querySelectorAll('.tab').forEach(tab => {
+    document.querySelectorAll('[data-tab]').forEach(tab => {
         tab.addEventListener('click', () => switchTab(tab.dataset.tab));
     });
 
@@ -91,19 +117,24 @@ async function loadMinds() {
         mindList.innerHTML = '';
 
         if (data.minds.length === 0) {
-            mindList.innerHTML = '<p style="color: var(--text-secondary); padding: 1rem;">还没有 Mind，创建一个吧</p>';
+            mindList.innerHTML = '<p style="color: var(--text-dim); padding: 1rem; text-align: center;">还没有 Mind，创建一个吧</p>';
             return;
         }
 
         data.minds.forEach(mind => {
             const item = document.createElement('div');
-            item.className = 'mind-item' + (mind.id === currentMindId ? ' active' : '');
             item.dataset.mindId = mind.id;
+            item.dataset.logicId = 'mind-list-item';
+            if (mind.id === currentMindId) {
+                item.dataset.active = 'true';
+            }
             item.innerHTML = `
                 <h3>${escapeHtml(mind.title)}</h3>
-                <span class="date">${formatDate(mind.updated_at)}</span>
+                <span>${formatDate(mind.updated_at)}</span>
             `;
-            item.addEventListener('click', () => selectMind(mind.id));
+            item.addEventListener('click', () => {
+                selectMind(mind.id);
+            });
             mindList.appendChild(item);
         });
     } catch (error) {
@@ -117,17 +148,26 @@ async function selectMind(mindId) {
     chatHistory = []; // 切换 Mind 时清空对话历史
 
     // 更新列表选中状态
-    document.querySelectorAll('.mind-item').forEach(item => {
-        item.classList.toggle('active', item.dataset.mindId === mindId);
+    document.querySelectorAll('[data-mind-id]').forEach(item => {
+        if (item.dataset.mindId === mindId) {
+            item.dataset.active = 'true';
+        } else {
+            delete item.dataset.active;
+        }
     });
 
     // 显示详情
     emptyState.style.display = 'none';
     mindDetail.style.display = 'flex';
 
+    // 移动端：添加 show-detail 类，自动隐藏侧边栏
+    const appContainer = document.querySelector('[data-logic-id="app-container"]');
+    appContainer.classList.add('show-detail');
+    appContainer.classList.remove('sidebar-open');
+
     // 重置对话区
     chatMessages.innerHTML = `
-        <div class="chat-welcome">
+        <div data-logic-id="chat-welcome">
             <p>我已经了解了你关于这个主题的所有想法。</p>
             <p>有什么想和我讨论的吗？</p>
         </div>
@@ -158,18 +198,18 @@ async function loadTimeline() {
         const data = await response.json();
 
         if (!data.timeline || data.timeline.length === 0) {
-            timelineContent.innerHTML = '<p class="placeholder">还没有内容，先投喂一些想法吧</p>';
+            timelineContent.innerHTML = '<p style="color: var(--text-dim); text-align: center;">还没有内容，先投喂一些想法吧</p>';
             return;
         }
 
-        let html = '<div class="timeline-list">';
+        let html = '<div data-logic-id="timeline-list">';
         data.timeline.forEach(day => {
-            html += `<div class="timeline-day">
-                <div class="timeline-date">${day.date}</div>`;
+            html += `<div data-logic-id="timeline-day">
+                <div data-logic-id="timeline-date">${day.date}</div>`;
             day.items.forEach(item => {
-                html += `<div class="timeline-item">
-                    <span class="timeline-time">${item.time}</span>
-                    <div class="timeline-text">${escapeHtml(item.content)}</div>
+                html += `<div data-logic-id="timeline-item">
+                    <span data-logic-id="timeline-time">${item.time}</span>
+                    <div data-logic-id="timeline-text">${escapeHtml(item.content)}</div>
                 </div>`;
             });
             html += '</div>';
@@ -179,7 +219,7 @@ async function loadTimeline() {
         timelineContent.innerHTML = html;
     } catch (error) {
         console.error('加载时间轴失败:', error);
-        timelineContent.innerHTML = '<p class="placeholder">加载失败</p>';
+        timelineContent.innerHTML = '<p>加载失败</p>';
     }
 }
 
@@ -192,14 +232,14 @@ async function loadStructure() {
         const data = await response.json();
 
         if (!data.structure_markdown || data.structure_markdown === '还没有内容，先投喂一些想法吧') {
-            structureContent.innerHTML = '<p class="placeholder">还没有内容，先投喂一些想法吧</p>';
+            structureContent.innerHTML = '<p style="color: var(--text-dim); text-align: center;">还没有内容，先投喂一些想法吧</p>';
             return;
         }
 
-        structureContent.innerHTML = `<div class="structure-text">${markdownToHtml(data.structure_markdown)}</div>`;
+        structureContent.innerHTML = `<div data-logic-id="structure-text">${markdownToHtml(data.structure_markdown)}</div>`;
     } catch (error) {
         console.error('加载结构失败:', error);
-        structureContent.innerHTML = '<p class="placeholder">加载失败</p>';
+        structureContent.innerHTML = '<p>加载失败</p>';
     }
 }
 
@@ -210,7 +250,7 @@ async function generateNarrative() {
     const btn = document.getElementById('generateNarrativeBtn');
     btn.disabled = true;
     btn.textContent = '生成中...';
-    narrativeContent.innerHTML = '<p class="loading">正在整合所有记录，生成叙事...</p>';
+    narrativeContent.innerHTML = '<p style="color: var(--text-dim);">正在整合所有记录，生成叙事...</p>';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/narrative`, {
@@ -219,13 +259,13 @@ async function generateNarrative() {
         const data = await response.json();
 
         if (data.narrative) {
-            narrativeContent.innerHTML = `<div class="narrative-text">${escapeHtml(data.narrative)}</div>`;
+            narrativeContent.innerHTML = `<div data-logic-id="narrative-text">${markdownToHtml(data.narrative)}</div>`;
         } else {
-            narrativeContent.innerHTML = '<p class="placeholder">暂无内容</p>';
+            narrativeContent.innerHTML = '<p>暂无内容</p>';
         }
     } catch (error) {
         console.error('生成叙事失败:', error);
-        narrativeContent.innerHTML = '<p class="placeholder">生成失败</p>';
+        narrativeContent.innerHTML = '<p>生成失败</p>';
     } finally {
         btn.disabled = false;
         btn.textContent = '生成叙事';
@@ -258,7 +298,7 @@ async function createMind() {
 
 // 关闭弹窗
 function closeModal() {
-    document.getElementById('createMindModal').classList.remove('show');
+    document.getElementById('createMindModal').close();
 }
 
 // 提交投喂
@@ -271,7 +311,6 @@ async function submitFeed() {
     const btn = document.getElementById('feedBtn');
     btn.disabled = true;
     feedStatus.textContent = '正在处理...';
-    feedStatus.className = 'feed-status';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/feed`, {
@@ -283,7 +322,6 @@ async function submitFeed() {
         if (response.ok) {
             feedInput.value = '';
             feedStatus.textContent = '已记录，正在去噪和更新结构...';
-            feedStatus.className = 'feed-status success';
 
             // 延迟刷新，等待后台处理
             setTimeout(async () => {
@@ -297,12 +335,10 @@ async function submitFeed() {
             loadMinds();
         } else {
             feedStatus.textContent = '提交失败';
-            feedStatus.className = 'feed-status error';
         }
     } catch (error) {
         console.error('投喂失败:', error);
         feedStatus.textContent = '提交失败';
-        feedStatus.className = 'feed-status error';
     } finally {
         btn.disabled = false;
     }
@@ -317,7 +353,7 @@ async function generateOutput() {
 
     const btn = document.getElementById('outputBtn');
     btn.disabled = true;
-    outputResult.innerHTML = '<p class="loading">正在生成...</p>';
+    outputResult.innerHTML = '<p style="color: var(--text-dim);">正在生成...</p>';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/output`, {
@@ -328,14 +364,14 @@ async function generateOutput() {
 
         if (response.ok) {
             const data = await response.json();
-            outputResult.innerHTML = `<div class="output-text">${escapeHtml(data.content)}</div>`;
+            outputResult.innerHTML = `<div data-logic-id="output-text">${escapeHtml(data.content)}</div>`;
         } else {
             const error = await response.json();
-            outputResult.innerHTML = `<p class="error">${error.detail || '生成失败'}</p>`;
+            outputResult.innerHTML = `<p>${error.detail || '生成失败'}</p>`;
         }
     } catch (error) {
         console.error('生成失败:', error);
-        outputResult.innerHTML = '<p class="error">生成失败</p>';
+        outputResult.innerHTML = '<p>生成失败</p>';
     } finally {
         btn.disabled = false;
     }
@@ -346,7 +382,7 @@ async function loadMindmap() {
     if (!currentMindId) return;
 
     const container = document.getElementById('mindmapContainer');
-    container.innerHTML = '<div class="mindmap-loading">正在生成思维导图...</div>';
+    container.innerHTML = '<div style="text-align: center; color: var(--text-dim);">正在生成思维导图...</div>';
 
     try {
         const response = await fetch(`${API_BASE}/minds/${currentMindId}/mindmap`);
@@ -355,11 +391,11 @@ async function loadMindmap() {
         if (data.mindmap && data.mindmap.branches && data.mindmap.branches.length > 0) {
             renderMindmap(data.mindmap);
         } else {
-            container.innerHTML = '<p class="placeholder">还没有足够的内容生成导图</p>';
+            container.innerHTML = '<p style="color: var(--text-dim); text-align: center;">还没有足够的内容生成导图</p>';
         }
     } catch (error) {
         console.error('加载导图失败:', error);
-        container.innerHTML = '<p class="placeholder">加载失败</p>';
+        container.innerHTML = '<p>加载失败</p>';
     }
 }
 
@@ -367,17 +403,17 @@ async function loadMindmap() {
 function renderMindmap(mindmap) {
     const container = document.getElementById('mindmapContainer');
 
-    let html = '<div class="mindmap-tree">';
-    html += `<div class="tree-center">${escapeHtml(mindmap.center)}</div>`;
-    html += '<div class="tree-branches">';
+    let html = '<div data-logic-id="mindmap-tree">';
+    html += `<div data-logic-id="tree-center">${escapeHtml(mindmap.center)}</div>`;
+    html += '<div data-logic-id="tree-branches">';
 
     mindmap.branches.forEach(branch => {
         const isPending = branch.type === 'pending';
-        html += `<div class="tree-branch${isPending ? ' pending' : ''}">
-            <div class="branch-label">${escapeHtml(branch.label)}${isPending ? ' ❓' : ''}</div>`;
+        html += `<div data-logic-id="tree-branch" data-pending="${isPending}">
+            <div data-logic-id="branch-label">${escapeHtml(branch.label)}${isPending ? ' ❓' : ''}</div>`;
 
         if (branch.children && branch.children.length > 0) {
-            html += '<ul class="branch-children">';
+            html += '<ul data-logic-id="branch-children">';
             branch.children.forEach(child => {
                 html += `<li>${escapeHtml(child)}</li>`;
             });
@@ -393,15 +429,27 @@ function renderMindmap(mindmap) {
 // 切换标签页
 function switchTab(tabName) {
     // 更新标签按钮状态
-    document.querySelectorAll('.tab').forEach(tab => {
-        tab.classList.toggle('active', tab.dataset.tab === tabName);
+    document.querySelectorAll('[data-tab]').forEach(tab => {
+        if (tab.dataset.tab === tabName) {
+            tab.dataset.active = 'true';
+        } else {
+            delete tab.dataset.active;
+        }
     });
 
     // 更新内容显示
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
+    const allTabs = ['feed', 'chat', 'timeline', 'narrative', 'structure', 'mindmap', 'output'];
+    allTabs.forEach(tab => {
+        const element = document.getElementById(`${tab}Tab`);
+        if (element) {
+            if (tab === tabName) {
+                // Chat Tab 需要 flex 布局
+                element.style.display = (tab === 'chat') ? 'flex' : 'block';
+            } else {
+                element.style.display = 'none';
+            }
+        }
     });
-    document.getElementById(`${tabName}Tab`).classList.add('active');
 }
 
 // ========== 对话功能 ==========
@@ -462,7 +510,7 @@ async function sendChatMessage() {
 // 添加对话消息到界面
 function addChatMessage(role, content, isLoading = false) {
     // 隐藏欢迎语
-    const welcome = chatMessages.querySelector('.chat-welcome');
+    const welcome = chatMessages.querySelector('[data-logic-id="chat-welcome"]');
     if (welcome) {
         welcome.style.display = 'none';
     }
@@ -470,12 +518,16 @@ function addChatMessage(role, content, isLoading = false) {
     const messageId = `msg_${Date.now()}`;
     const messageDiv = document.createElement('div');
     messageDiv.id = messageId;
-    messageDiv.className = `chat-message ${role}${isLoading ? ' loading' : ''}`;
+    messageDiv.dataset.logicId = 'chat-message';
+    messageDiv.dataset.role = role;
 
     const roleText = role === 'user' ? '你' : 'AI';
+    // 用户消息用 escapeHtml，AI 消息用 markdownToHtml
+    const contentHtml = role === 'user' ? escapeHtml(content) : markdownToHtml(content);
+
     messageDiv.innerHTML = `
-        <div class="role">${roleText}</div>
-        <div class="content">${escapeHtml(content)}</div>
+        <div data-logic-id="chat-role">${roleText}</div>
+        <div data-logic-id="chat-content">${contentHtml}</div>
     `;
 
     chatMessages.appendChild(messageDiv);
@@ -500,7 +552,7 @@ function clearChat() {
 
     chatHistory = [];
     chatMessages.innerHTML = `
-        <div class="chat-welcome">
+        <div data-logic-id="chat-welcome">
             <p>我已经了解了你关于这个主题的所有想法。</p>
             <p>有什么想和我讨论的吗？</p>
         </div>
@@ -508,6 +560,14 @@ function clearChat() {
 }
 
 // ========== 工具函数 ==========
+
+// 返回列表（移动端）
+function goBackToList() {
+    const appContainer = document.querySelector('[data-logic-id="app-container"]');
+    appContainer.classList.remove('show-detail');
+    appContainer.classList.remove('sidebar-open');
+}
+
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -523,10 +583,42 @@ function formatDate(dateStr) {
 
 function markdownToHtml(markdown) {
     if (!markdown) return '';
-    return markdown
+
+    // 先转义 HTML 特殊字符（保留换行）
+    let html = markdown
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    // Markdown 转换
+    html = html
+        // 标题
+        .replace(/^### (.+)$/gm, '<h4>$1</h4>')
         .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+        .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+        // 粗体和斜体
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        // 代码块
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        // 列表项
         .replace(/^- (.+)$/gm, '<li>$1</li>')
-        .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-        .replace(/<\/ul>\s*<ul>/g, '')
-        .replace(/\n/g, '<br>');
+        .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+
+    // 处理连续的列表项，包裹成 ul
+    html = html.replace(/(<li>.*<\/li>\n?)+/gs, match => `<ul>${match}</ul>`);
+
+    // 换行转 <br>（但不在标签内部）
+    html = html
+        .replace(/<\/h[234]>\n/g, '</h$&>')  // 标题后不加 br
+        .replace(/<\/ul>\n/g, '</ul>')        // 列表后不加 br
+        .replace(/\n\n/g, '</p><p>')          // 双换行分段
+        .replace(/\n/g, '<br>');              // 单换行
+
+    // 包裹成段落
+    if (!html.startsWith('<h') && !html.startsWith('<ul')) {
+        html = '<p>' + html + '</p>';
+    }
+
+    return html;
 }

@@ -120,7 +120,7 @@ class Database:
             "core_goal": north_star or "",
             "current_knowledge": [],
             "highlights": [],
-            "pending_questions": [],
+            "pending_notes": [],
             "evolution": []
         }
 

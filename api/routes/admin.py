@@ -7,10 +7,11 @@ from typing import List, Optional
 
 from api.services.db_service import db
 from api.services.ai_service import (
-    ORGANIZER_SYSTEM_PROMPT,
+    CLEANER_SYSTEM_PROMPT,
     EXPRESSER_SYSTEM_PROMPT,
     CLARIFIER_SYSTEM_PROMPT,
-    MINDMAPPER_SYSTEM_PROMPT
+    MINDMAPPER_SYSTEM_PROMPT,
+    NARRATIVE_SYSTEM_PROMPT
 )
 
 router = APIRouter()
@@ -18,10 +19,10 @@ router = APIRouter()
 
 # 默认提示词（用于初始化）
 DEFAULT_PROMPTS = {
-    "organizer": {
+    "cleaner": {
         "name": "整理器",
-        "content": ORGANIZER_SYSTEM_PROMPT,
-        "description": "负责将投喂内容整理到 Crystal 结构中"
+        "content": CLEANER_SYSTEM_PROMPT,
+        "description": "负责去噪并更新 Crystal 结构（每次投喂自动调用）"
     },
     "expresser": {
         "name": "表达器",
@@ -37,6 +38,11 @@ DEFAULT_PROMPTS = {
         "name": "导图器",
         "content": MINDMAPPER_SYSTEM_PROMPT,
         "description": "负责将想法提炼为思维导图结构"
+    },
+    "narrative": {
+        "name": "叙事器",
+        "content": NARRATIVE_SYSTEM_PROMPT,
+        "description": "负责将时间轴记录整合为连贯叙事"
     }
 }
 

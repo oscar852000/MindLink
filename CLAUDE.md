@@ -74,22 +74,114 @@ MindLink 的目标不是记录生活，而是维持思想的"持续清醒"。
 /root/MindLink/
 ├── api/                    # 后端 API
 │   ├── main.py            # FastAPI 入口
+│   ├── config.py          # 统一配置（AI Hub、模型、Crystal 模板）
 │   ├── routes/            # 路由模块
-│   ├── services/          # 业务逻辑层
-│   └── models/            # 数据模型
+│   │   ├── mind.py        # Mind CRUD
+│   │   ├── feed.py        # 投喂、输出、时间轴、澄清、导图
+│   │   ├── chat.py        # AI 对话
+│   │   └── admin.py       # 提示词管理
+│   └── services/          # 业务逻辑层
+│       ├── ai_service.py  # AI 调用（整理、输出、导图等）
+│       ├── chat_service.py # 对话服务
+│       └── db_service.py  # 数据库操作
 ├── web/                    # 前端静态文件
 │   ├── index.html
+│   ├── admin.html
 │   └── static/
-│       ├── css/
-│       └── js/
+│       ├── css/style.css
+│       └── js/app.js
 ├── data/                   # 数据存储 (不提交到 Git)
 ├── logs/                   # 日志 (不提交到 Git)
-├── config/                 # 配置
-├── scripts/                # 启动脚本
 └── docs/                   # 文档
-    ├── ORIGINAL_VISION.md  # 产品初心（锚点文档）
-    ├── PRODUCT_SPEC.md     # 产品规格
-    └── API_REFERENCE.md    # API 文档
+```
+
+---
+
+## 代码架构规范
+
+### 三层架构
+
+```
+┌─────────────────────────────────────────┐
+│           路由层 (api/routes/)           │
+│   接收请求、参数验证、返回响应            │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│          服务层 (api/services/)          │
+│   业务逻辑、AI 调用、数据处理             │
+└──────────────────┬──────────────────────┘
+                   │
+┌──────────────────▼──────────────────────┐
+│          数据层 (db_service.py)          │
+│   数据库操作、数据持久化                  │
+└─────────────────────────────────────────┘
+```
+
+### 配置统一管理
+
+所有配置集中在 `api/config.py`：
+
+| 配置项 | 说明 |
+|--------|------|
+| `AI_HUB_URL` | AI Hub 服务地址 |
+| `DEFAULT_MODEL` | 默认 AI 模型 |
+| `AVAILABLE_MODELS` | 可用模型列表 |
+| `AVAILABLE_STYLES` | 对话风格列表 |
+| `CRYSTAL_TEMPLATE` | Crystal 结构模板 |
+
+### Crystal 字段规范
+
+**统一使用以下字段名：**
+
+```python
+{
+    "core_goal": "",           # 核心目标（一句话）
+    "current_knowledge": [],   # 当前认知（要点列表）
+    "highlights": [],          # 亮点创意（细节池）
+    "pending_notes": [],       # 待定事项（陈述句，非问句）
+    "evolution": [],           # 演变记录
+}
+```
+
+⚠️ **注意**：不要使用 `pending_questions`，统一使用 `pending_notes`
+
+### AI 服务函数说明
+
+| 函数 | 用途 | 提示词 Key |
+|------|------|-----------|
+| `clean_and_update_structure()` | 去噪 + 更新结构 | `cleaner` |
+| `generate_narrative()` | 生成叙事视图 | `narrative` |
+| `generate_output()` | 按指令生成表达 | `expresser` |
+| `generate_mindmap()` | 生成思维导图 | `mindmapper` |
+| `generate_clarification_questions()` | 生成澄清问题 | `clarifier` |
+
+---
+
+## 开发禁忌
+
+### ❌ 禁止打补丁式开发
+
+| 反模式 | 正确做法 |
+|--------|----------|
+| 保留废弃代码"以防万一" | 直接删除，Git 有历史记录 |
+| 添加兼容旧字段名的代码 | 统一迁移到新字段名 |
+| 复制粘贴配置到多个文件 | 集中到 `config.py` |
+| 添加 `# TODO: 以后删除` | 立即处理或创建 Issue |
+
+### ❌ 禁止重复定义
+
+- 配置项必须在 `config.py` 统一定义
+- 不要在多个文件中重复定义 `AI_HUB_URL`、`AVAILABLE_MODELS` 等
+
+### ✅ 正确做法
+
+```python
+# 正确：从统一配置导入
+from api.config import AI_HUB_URL, DEFAULT_MODEL
+
+# 错误：在每个文件重复定义
+AI_HUB_URL = "http://localhost:8000"  # ❌ 不要这样做
 ```
 
 ---
@@ -278,5 +370,5 @@ uvicorn api.main:app --reload --host 0.0.0.0 --port 7003
 
 ---
 
-**文档版本**: v1.1
-**最后更新**: 2024-12-28
+**文档版本**: v1.2
+**最后更新**: 2025-12-29

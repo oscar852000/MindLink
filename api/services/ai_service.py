@@ -6,11 +6,9 @@ import json
 import logging
 from typing import Optional, List, Dict, Any, Tuple
 
-logger = logging.getLogger(__name__)
+from api.config import AI_HUB_URL, DEFAULT_MODEL, CRYSTAL_TEMPLATE
 
-# AI Hub 配置
-AI_HUB_URL = "http://localhost:8000"
-DEFAULT_MODEL = "google_gemini_3_flash"
+logger = logging.getLogger(__name__)
 
 
 def get_prompt(key: str, default: str) -> str:
@@ -66,18 +64,6 @@ async def call_ai(
             return choices[0]["content"]
 
         raise Exception("AI 没有返回有效内容")
-
-
-# ========== Crystal 结构定义 ==========
-
-CRYSTAL_TEMPLATE = {
-    "core_goal": "",           # 核心目标（一句话）
-    "current_knowledge": [],   # 当前认知（要点列表）
-    "highlights": [],          # 亮点创意（细节池）
-    "pending_notes": [],       # 待定事项（陈述句，非问句）
-    "evolution": [],           # 演变记录
-}
-
 
 # ========== 去噪+结构更新组合器 ==========
 
@@ -251,172 +237,6 @@ async def generate_narrative(
     return await call_ai(messages, thinking_level="medium", max_tokens=8192)
 
 
-# ========== 旧版整理器（保留兼容） ==========
-
-ORGANIZER_SYSTEM_PROMPT = """你是 MindLink 的整理器（Organizer），负责将用户的投喂内容整理到 Crystal 中。
-
-## 你的角色
-- 你是编辑器，不是作者
-- 只聆听和整理，不加入自己的见解
-- 忠实记录用户的想法，不追问、不建议
-
-## 最重要的原则：先保留，再整理
-
-你的首要任务是生成 **base_text（底层材料）**：
-- 这是用户所有想法的**压缩但不丢失原意**的版本
-- 用连贯的自然语言描述，不是列表
-- 去除纯重复和语气词，但保留所有有意义的内容
-- base_text 是所有其他字段的**源头**，其他字段是从它提炼的
-
-### base_text 压缩原则
-✓ 保留：观点、决策、细节、疑虑、情绪、比喻、例子
-✓ 保留：用户的原始措辞（如果有特色）
-✗ 去除：完全重复的句子、无意义的语气词（"嗯"、"那个"）
-✗ 去除：已被用户明确否定/推翻的旧内容
-
-### 压缩比例指导
-- 原文 1000 字 → base_text 约 600-800 字（保留 60-80%）
-- 原文 5000 字 → base_text 约 2500-3500 字（保留 50-70%）
-- 宁可长一点，也不要丢失有意义的内容
-
-## Crystal 结构
-从 base_text 提炼出以下结构化字段：
-- core_goal: 核心目标（一句话）
-- current_knowledge: 当前认知（5-10个要点）
-- highlights: 亮点创意（值得强调的点）
-- pending_notes: 待定事项（用陈述句，不是问句）
-- evolution: 演变记录
-- narrative: 叙事摘要（2-4句话概述）
-
-## 整理规则
-1. 有新内容时：更新 base_text，然后重新提炼结构字段
-2. 内容冲突时：以新内容为准，旧内容移到 evolution
-3. 内容过时时：从 base_text 移除，记录到 evolution
-
-## 输出格式
-```json
-{
-    "base_text": "这里是保留原意的压缩文本...",
-    "core_goal": "一句话核心目标",
-    "current_knowledge": ["要点1", "要点2", ...],
-    "highlights": ["亮点1", "亮点2", ...],
-    "pending_notes": ["待定事项1（陈述句）", ...],
-    "evolution": ["变化记录1", ...],
-    "narrative": "叙事摘要...",
-    "organize_summary": "本次整理的简短摘要"
-}
-```
-
-只返回 JSON，不要其他内容。"""
-
-
-async def organize_feeds(
-    current_crystal: Optional[Dict[str, Any]],
-    new_feeds: List[Dict[str, Any]],
-    mind_title: str
-) -> Tuple[Dict[str, Any], str]:
-    """
-    整理投喂内容到 Crystal
-
-    Args:
-        current_crystal: 当前 Crystal（可能为空）
-        new_feeds: 新投喂列表
-        mind_title: Mind 标题
-
-    Returns:
-        (更新后的 Crystal, 整理摘要)
-    """
-    # 从数据库获取提示词，如果没有则使用默认值
-    system_prompt = get_prompt("organizer", ORGANIZER_SYSTEM_PROMPT)
-
-    # 构建投喂内容
-    feeds_text = "\n".join([
-        f"[{f['created_at']}] {f['content']}"
-        for f in new_feeds
-    ])
-
-    # 如果有现有 Crystal，包含 base_text
-    if current_crystal and (current_crystal.get("base_text") or current_crystal.get("current_knowledge")):
-        # 优先使用 base_text，如果没有则用结构化字段
-        existing_base = current_crystal.get("base_text", "")
-        if not existing_base and current_crystal.get("current_knowledge"):
-            # 兼容旧数据：从结构字段重建 base_text
-            existing_base = f"核心目标：{current_crystal.get('core_goal', '')}\n"
-            existing_base += "当前认知：" + "；".join(current_crystal.get("current_knowledge", [])) + "\n"
-            if current_crystal.get("highlights"):
-                existing_base += "亮点：" + "；".join(current_crystal.get("highlights", [])) + "\n"
-
-        user_prompt = f"""## Mind 标题
-{mind_title}
-
-## 现有底层材料（base_text）
-{existing_base}
-
-## 现有 Crystal 结构
-```json
-{json.dumps(current_crystal, ensure_ascii=False, indent=2)}
-```
-
-## 新增投喂（共 {len(new_feeds)} 条）
-{feeds_text}
-
-请将新投喂内容整合到 base_text 中，然后更新 Crystal 结构。
-重点：base_text 要保留原意，不要过度压缩。只返回更新后的完整 JSON。"""
-    else:
-        user_prompt = f"""## Mind 标题
-{mind_title}
-
-## 投喂内容（共 {len(new_feeds)} 条）
-{feeds_text}
-
-请根据投喂内容，生成初始 Crystal。
-重点：base_text 要保留原意，不要过度压缩。只返回 JSON。"""
-
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_prompt}
-    ]
-
-    try:
-        result = await call_ai(messages, thinking_level="medium", max_tokens=8192)
-
-        # 尝试解析 JSON
-        # 处理可能的 markdown 代码块
-        if "```json" in result:
-            result = result.split("```json")[1].split("```")[0]
-        elif "```" in result:
-            result = result.split("```")[1].split("```")[0]
-
-        crystal = json.loads(result.strip())
-
-        # 提取摘要
-        summary = crystal.pop("organize_summary", "更新 Crystal")
-
-        # 确保所有必要字段存在
-        for key in CRYSTAL_TEMPLATE:
-            if key not in crystal:
-                crystal[key] = CRYSTAL_TEMPLATE[key]
-
-        return crystal, summary
-
-    except json.JSONDecodeError as e:
-        logger.error(f"Crystal JSON 解析失败: {e}, 原始内容: {result[:500]}")
-        # 返回简单的文本 Crystal
-        return {
-            "base_text": feeds_text[:2000],  # 保留原文作为 base_text
-            "core_goal": mind_title,
-            "current_knowledge": [f["content"][:100] for f in new_feeds[:5]],
-            "highlights": [],
-            "pending_notes": [],
-            "evolution": ["初始化（JSON解析失败，使用原始内容）"],
-            "narrative": ""
-        }, "初始化 Crystal"
-
-    except Exception as e:
-        logger.error(f"整理失败: {e}")
-        raise
-
-
 # ========== 输出器 (Expresser) ==========
 
 EXPRESSER_SYSTEM_PROMPT = """你帮用户把想法转化为不同风格的表达。
@@ -529,10 +349,9 @@ def format_crystal_markdown(crystal: Dict[str, Any]) -> str:
         items = "\n".join([f"- {h}" for h in crystal["highlights"]])
         sections.append(f"## 亮点创意\n{items}")
 
-    # 待定事项（兼容旧的 pending_questions）
-    pending = crystal.get("pending_notes") or crystal.get("pending_questions", [])
-    if pending:
-        items = "\n".join([f"- {p}" for p in pending])
+    # 待定事项
+    if crystal.get("pending_notes"):
+        items = "\n".join([f"- {p}" for p in crystal["pending_notes"]])
         sections.append(f"## 待定事项\n{items}")
 
     # 演变记录
@@ -616,8 +435,8 @@ async def generate_mindmap(
 ## 亮点创意
 {chr(10).join(['- ' + h for h in crystal.get('highlights', [])])}
 
-## 待确认
-{chr(10).join(['- ' + q for q in crystal.get('pending_questions', [])])}
+## 待定事项
+{chr(10).join(['- ' + q for q in crystal.get('pending_notes', [])])}
 """
 
     user_prompt = f"""## Mind 标题

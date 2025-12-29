@@ -159,17 +159,6 @@ async def generate_mind_output(mind_id: str, request: OutputRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/minds/{mind_id}/reorganize")
-async def reorganize_mind(mind_id: str):
-    """手动触发重新整理（已弃用，保留兼容）"""
-    # 新架构下，每次投喂都会自动处理
-    # 这个接口保留用于兼容，但实际上不需要再调用
-    return {
-        "status": "ok",
-        "message": "新架构下无需手动整理，每次投喂自动处理"
-    }
-
-
 # ========== 时间轴视图 ==========
 
 class TimelineItem(BaseModel):
@@ -329,8 +318,8 @@ async def submit_answer(mind_id: str, request: AnswerRequest, background_tasks: 
     feed_id = f"feed_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
     db.add_feed(feed_id, mind_id, content)
 
-    # 异步触发整理
-    background_tasks.add_task(_organize_mind, mind_id)
+    # 异步处理：去噪 + 更新结构
+    background_tasks.add_task(_process_feed, mind_id, feed_id, content)
 
     return AnswerResponse(
         status="ok",
