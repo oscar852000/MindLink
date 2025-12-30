@@ -5,6 +5,20 @@ const API_BASE = '/api/admin';
 let currentPromptKey = null;
 let prompts = [];
 
+// 分类配置
+const CATEGORY_CONFIG = {
+    'core': {
+        name: '核心功能',
+        description: '对应前端主要 Tab',
+        icon: '⚙️'
+    },
+    'chat': {
+        name: '对话功能',
+        description: '对话 Tab 相关',
+        icon: '💬'
+    }
+};
+
 // HTML 转义函数 - 防止 XSS
 function escapeHtml(text) {
     if (!text) return '';
@@ -38,7 +52,7 @@ async function loadPrompts() {
     }
 }
 
-// 渲染提示词列表
+// 渲染提示词列表（按分类）
 function renderPromptList() {
     const container = document.getElementById('promptList');
 
@@ -47,15 +61,54 @@ function renderPromptList() {
         return;
     }
 
-    container.innerHTML = prompts.map(p => `
-        <div class="prompt-item ${p.key === currentPromptKey ? 'active' : ''}"
-             data-key="${escapeHtml(p.key)}"
-             onclick="selectPrompt('${escapeHtml(p.key)}')">
-            <h3>${escapeHtml(p.name)}</h3>
-            <p>${escapeHtml(p.description) || '无描述'}</p>
-            <div class="updated">更新于: ${formatTime(p.updated_at)}</div>
-        </div>
-    `).join('');
+    // 按分类分组
+    const grouped = {};
+    prompts.forEach(p => {
+        const category = p.category || 'other';
+        if (!grouped[category]) {
+            grouped[category] = [];
+        }
+        grouped[category].push(p);
+    });
+
+    // 渲染分组
+    let html = '';
+
+    // 按固定顺序渲染：core, chat
+    const categoryOrder = ['core', 'chat'];
+
+    categoryOrder.forEach(category => {
+        if (!grouped[category] || grouped[category].length === 0) return;
+
+        const config = CATEGORY_CONFIG[category] || {
+            name: '其他',
+            description: '',
+            icon: '📋'
+        };
+
+        html += `
+            <div class="prompt-category">
+                <div class="category-header">
+                    <span class="category-icon">${config.icon}</span>
+                    <span class="category-name">${config.name}</span>
+                    <span class="category-count">${grouped[category].length}</span>
+                </div>
+                <div class="category-prompts">
+                    ${grouped[category].map(p => `
+                        <div class="prompt-item ${p.key === currentPromptKey ? 'active' : ''}"
+                             data-key="${escapeHtml(p.key)}"
+                             onclick="selectPrompt('${escapeHtml(p.key)}')">
+                            <h3>${escapeHtml(p.name)}</h3>
+                            <p>${escapeHtml(p.description) || '无描述'}</p>
+                            <div class="updated">更新于: ${formatTime(p.updated_at)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
 }
 
 // 选择提示词

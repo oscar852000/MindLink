@@ -12,10 +12,7 @@ from api.services.db_service import db
 from api.services.ai_service import (
     clean_and_update_structure,
     generate_output,
-    generate_clarification_questions,
-    generate_mindmap,
-    mindmap_to_markdown,
-    generate_narrative
+    generate_narrative_with_meta
 )
 
 logger = logging.getLogger(__name__)
@@ -208,11 +205,15 @@ class NarrativeResponse(BaseModel):
     """叙事视图响应"""
     narrative: str
     feed_count: int
+    summary: Optional[str] = None
+    summary_changed: bool = False
+    tags: List[str] = []
+    tags_changed: bool = False
 
 
 @router.post("/minds/{mind_id}/narrative")
 async def generate_narrative_view(mind_id: str):
-    """生成叙事视图（点击触发）"""
+    """生成叙事视图（点击触发），同时更新概述和标签"""
     mind = db.get_mind(mind_id)
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
@@ -225,148 +226,44 @@ async def generate_narrative_view(mind_id: str):
         )
 
     try:
-        narrative = await generate_narrative(
+        # 获取当前概述和标签
+        current_summary = mind.get("summary")
+        current_tags = db.get_mind_tags(mind_id)
+
+        # 获取全局标签库
+        all_tags = db.get_all_tags()
+        tag_library = [t["name"] for t in all_tags]
+
+        # 调用带元数据的叙事生成
+        result = await generate_narrative_with_meta(
             cleaned_feeds=feeds,
-            mind_title=mind["title"]
+            mind_title=mind["title"],
+            current_summary=current_summary,
+            current_tags=current_tags,
+            tag_library=tag_library
         )
 
+        # 如果概述有变化，更新数据库
+        if result["summary_changed"] and result["summary"]:
+            db.update_mind_summary(mind_id, result["summary"])
+
+        # 如果标签有变化，更新数据库
+        if result["tags_changed"] and result["tags"]:
+            db.set_mind_tags(mind_id, result["tags"])
+
+        # 保存叙事内容
+        if result["narrative"]:
+            db.update_mind_narrative(mind_id, result["narrative"])
+
         return NarrativeResponse(
-            narrative=narrative,
-            feed_count=len(feeds)
+            narrative=result["narrative"],
+            feed_count=len(feeds),
+            summary=result["summary"],
+            summary_changed=result["summary_changed"],
+            tags=result["tags"],
+            tags_changed=result["tags_changed"]
         )
 
     except Exception as e:
         logger.error(f"生成叙事视图失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# ========== 澄清问答 ==========
-
-class ClarifyQuestion(BaseModel):
-    """澄清问题"""
-    question: str
-    context: str
-    options: List[str]
-
-
-class ClarifyResponse(BaseModel):
-    """澄清响应"""
-    has_questions: bool
-    questions: List[ClarifyQuestion]
-
-
-class AnswerRequest(BaseModel):
-    """回答请求"""
-    question: str
-    answer: str  # 可以是选项内容，也可以是自定义输入
-
-
-class AnswerResponse(BaseModel):
-    """回答响应"""
-    status: str
-    message: str
-
-
-@router.post("/minds/{mind_id}/clarify", response_model=ClarifyResponse)
-async def get_clarification_questions(mind_id: str):
-    """获取 AI 生成的澄清问题"""
-    mind = db.get_mind(mind_id)
-    if not mind:
-        raise HTTPException(status_code=404, detail="Mind not found")
-
-    crystal = mind.get("crystal")
-    if not crystal or not crystal.get("current_knowledge"):
-        return ClarifyResponse(
-            has_questions=False,
-            questions=[]
-        )
-
-    try:
-        questions = await generate_clarification_questions(
-            crystal=crystal,
-            mind_title=mind["title"]
-        )
-
-        return ClarifyResponse(
-            has_questions=len(questions) > 0,
-            questions=[
-                ClarifyQuestion(
-                    question=q["question"],
-                    context=q.get("context", ""),
-                    options=q.get("options", [])
-                )
-                for q in questions
-            ]
-        )
-
-    except Exception as e:
-        logger.error(f"生成澄清问题失败: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/minds/{mind_id}/answer", response_model=AnswerResponse)
-async def submit_answer(mind_id: str, request: AnswerRequest, background_tasks: BackgroundTasks):
-    """提交澄清问题的答案（自动作为投喂内容）"""
-    mind = db.get_mind(mind_id)
-    if not mind:
-        raise HTTPException(status_code=404, detail="Mind not found")
-
-    # 将问答格式化为投喂内容
-    content = f"【澄清】{request.question}\n答：{request.answer}"
-
-    # 记录投喂
-    feed_id = f"feed_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
-    db.add_feed(feed_id, mind_id, content)
-
-    # 异步处理：去噪 + 更新结构
-    background_tasks.add_task(_process_feed, mind_id, feed_id, content)
-
-    return AnswerResponse(
-        status="ok",
-        message="已记录答案"
-    )
-
-
-# ========== 思维导图 ==========
-
-class MindmapResponse(BaseModel):
-    """思维导图响应"""
-    mindmap: dict  # JSON 结构
-    markdown: str  # Markmap 渲染用
-
-
-@router.get("/minds/{mind_id}/mindmap", response_model=MindmapResponse)
-async def get_mindmap(mind_id: str):
-    """获取思维导图"""
-    mind = db.get_mind(mind_id)
-    if not mind:
-        raise HTTPException(status_code=404, detail="Mind not found")
-
-    crystal = mind.get("crystal")
-    if not crystal or not crystal.get("current_knowledge"):
-        # 返回空导图
-        empty_map = {
-            "center": mind.get("title", "新想法"),
-            "branches": []
-        }
-        return MindmapResponse(
-            mindmap=empty_map,
-            markdown=f"# {mind.get('title', '新想法')}"
-        )
-
-    try:
-        mindmap = await generate_mindmap(
-            crystal=crystal,
-            mind_title=mind["title"]
-        )
-
-        markdown = mindmap_to_markdown(mindmap)
-
-        return MindmapResponse(
-            mindmap=mindmap,
-            markdown=markdown
-        )
-
-    except Exception as e:
-        logger.error(f"生成思维导图失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))

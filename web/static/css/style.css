@@ -152,6 +152,41 @@ body {
     color: var(--text-dim);
 }
 
+[data-logic-id="mind-list-item"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mind-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.mind-delete-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 6px;
+    opacity: 0;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-left: 8px;
+}
+
+[data-logic-id="mind-list-item"]:hover .mind-delete-btn {
+    opacity: 1;
+}
+
+.mind-delete-btn:hover {
+    background: rgba(255, 82, 82, 0.2);
+    color: #ff5252;
+}
+
 /* 主内容区 */
 [data-logic-id="main-content"] {
     flex: 1;
@@ -208,6 +243,11 @@ body {
 
 [data-logic-id="detail-header"] {
     padding: 32px 32px 16px;
+}
+
+/* 移动端返回按钮 - 桌面端隐藏 */
+.mobile-back-btn {
+    display: none;
 }
 
 #mindTitle {
@@ -461,8 +501,23 @@ body {
 [data-logic-id="timeline-time"] {
     font-size: 11px;
     color: var(--text-dim);
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin-bottom: 4px;
+}
+
+[data-logic-id="timeline-current-tag"] {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--primary);
+    background: rgba(0, 122, 255, 0.15);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+[data-logic-id="timeline-item"][data-current="true"] {
+    border-left: 3px solid var(--primary);
 }
 
 /* 模态框样式 */
@@ -527,230 +582,6 @@ dialog::backdrop {
     }
 }
 
-/* 响应式适配 */
-@media (max-width: 768px) {
-
-    /* 移动端侧边栏占满全屏，默认可见 */
-    [data-logic-id="sidebar"] {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        transform: translateX(0);
-        width: 100%;
-        z-index: 200;
-    }
-
-    /* 当显示 Mind 详情时，隐藏侧边栏 */
-    [data-logic-id="app-container"].show-detail [data-logic-id="sidebar"] {
-        transform: translateX(-100%);
-    }
-
-    /* 在详情页手动打开侧边栏时 */
-    [data-logic-id="app-container"].sidebar-open [data-logic-id="sidebar"] {
-        transform: translateX(0);
-        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
-    }
-
-    /* 侧边栏打开时显示遮罩层 */
-    [data-logic-id="app-container"].sidebar-open .sidebar-overlay {
-        display: block;
-        opacity: 1;
-    }
-
-    [data-logic-id="detail-header"] {
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-    }
-
-    /* 移动端返回按钮 */
-    .mobile-back-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        color: var(--primary);
-        padding: 8px 16px;
-        border-radius: 10px;
-        font-size: 14px;
-        font-weight: 500;
-        cursor: pointer;
-        flex-shrink: 0;
-        transition: all 0.2s;
-    }
-
-    .mobile-back-btn:hover,
-    .mobile-back-btn:active {
-        background: var(--primary-glow);
-        border-color: var(--primary);
-    }
-
-    .empty-state-menu-btn {
-        display: block;
-    }
-
-    [id$="Tab"] {
-        padding: 16px;
-    }
-
-    [data-logic-id="tabs"] {
-        padding: 0 16px;
-    }
-
-    #mindTitle {
-        font-size: 20px;
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    /* 对话 Tab 移动端优化 - 关键修复 */
-    [data-logic-id="chat-tab-content"] {
-        padding: 16px;
-        padding-bottom: 0;
-        display: flex;
-        flex-direction: column;
-        height: calc(100vh - 180px); /* 固定高度，减去头部和tabs的高度 */
-        max-height: none;
-        overflow: hidden;
-    }
-
-    [data-logic-id="chat-controls"] {
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-bottom: 12px;
-        flex-shrink: 0;
-    }
-
-    [data-logic-id="chat-controls"] select {
-        flex: 1;
-        min-width: 100px;
-        font-size: 12px;
-        padding: 6px 8px;
-    }
-
-    [data-logic-id="chat-controls"] button {
-        padding: 6px 12px;
-        font-size: 12px;
-    }
-
-    #chatMessages {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        margin-bottom: 12px;
-        padding-right: 4px;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    [data-logic-id="chat-input-area"] {
-        flex-shrink: 0;
-        padding: 6px;
-        margin-bottom: env(safe-area-inset-bottom, 16px); /* 适配 iPhone 底部安全区 */
-        position: relative;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-    }
-
-    [data-logic-id="chat-input"] {
-        padding: 10px;
-        font-size: 16px;  /* 防止 iOS 缩放 */
-        min-height: 44px;
-    }
-
-    [data-logic-id="chat-send-button"] {
-        width: 40px;
-        height: 40px;
-        flex-shrink: 0;
-    }
-
-    /* 投喂 Tab 移动端优化 */
-    [data-logic-id="feed-input"] {
-        min-height: 150px;
-        font-size: 16px;  /* 防止 iOS 缩放 */
-    }
-
-    [data-logic-id="feed-submit-button"] {
-        padding: 12px 24px;
-    }
-
-    /* Mind 详情页整体布局修复 */
-    [data-logic-id="mind-detail"] {
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-    }
-
-    /* 模态框移动端优化 */
-    dialog {
-        width: calc(100% - 32px);
-        max-width: 400px;
-        margin: auto;
-        padding: 24px;
-    }
-
-    [data-logic-id="new-mind-title-input"] {
-        font-size: 16px; /* 防止 iOS 缩放 */
-    }
-
-    /* 输出 Tab 移动端优化 */
-    [data-logic-id="output-input-area"] {
-        flex-direction: column;
-    }
-
-    #outputInstruction {
-        font-size: 16px; /* 防止 iOS 缩放 */
-    }
-
-    #outputBtn {
-        padding: 14px 24px;
-    }
-
-    /* Tab 标签更紧凑 */
-    [data-logic-id="tabs"] button {
-        padding: 10px 12px;
-        font-size: 13px;
-    }
-
-    /* 时间轴项目优化 */
-    [data-logic-id="timeline-item"] {
-        padding: 16px;
-    }
-
-    /* 思维导图移动端优化 */
-    [data-logic-id="tree-center"] {
-        padding: 12px 24px;
-        font-size: 14px;
-    }
-
-    [data-logic-id="tree-branches"] {
-        grid-template-columns: 1fr;
-    }
-
-    /* 叙事和结构页面优化 */
-    [data-logic-id="narrative-text"],
-    [data-logic-id="structure-text"] {
-        padding: 16px;
-    }
-
-    /* 确保所有可滚动区域支持触摸滚动 */
-    [id$="Tab"],
-    #chatMessages,
-    [data-logic-id="mind-list"] {
-        -webkit-overflow-scrolling: touch;
-    }
-}
-
-/* 移动端返回按钮 - 默认隐藏，仅移动端显示 */
-.mobile-back-btn {
-    display: none;
-}
 
 /* 结构化 Markdown 增强 */
 [data-logic-id="structure-text"] h3 {
@@ -890,4 +721,46 @@ dialog::backdrop {
 [data-logic-id="chat-content"] p:last-child,
 [data-logic-id="narrative-text"] p:last-child {
     margin-bottom: 0;
+}
+
+/* ========== 概述和标签样式 ========== */
+
+/* 列表中的概述 */
+.mind-summary {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* 详情页概述区域 */
+.crystal-summary-area {
+    padding: 12px 32px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.ai-brief {
+    font-size: 14px;
+    color: var(--text-main);
+    margin: 0 0 8px;
+    line-height: 1.5;
+}
+
+/* 标签云 */
+.summary-tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.crystal-tag {
+    display: inline-block;
+    font-size: 12px;
+    color: var(--primary);
+    background: var(--primary-glow);
+    padding: 4px 10px;
+    border-radius: 12px;
+    border: 1px solid rgba(34, 211, 238, 0.2);
 }

@@ -49,6 +49,8 @@ class Database:
                     title TEXT NOT NULL,
                     north_star TEXT,
                     crystal_json TEXT,
+                    summary TEXT,
+                    narrative TEXT,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )
@@ -108,6 +110,32 @@ class Database:
                 )
             """)
 
+            # Tags 表（全局标签库）
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT UNIQUE NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """)
+
+            # Mind-Tags 关联表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS mind_tags (
+                    mind_id TEXT NOT NULL,
+                    tag_id INTEGER NOT NULL,
+                    PRIMARY KEY (mind_id, tag_id),
+                    FOREIGN KEY (mind_id) REFERENCES minds(id),
+                    FOREIGN KEY (tag_id) REFERENCES tags(id)
+                )
+            """)
+
+            # 检查并添加 minds.summary 字段（兼容旧数据库）
+            cursor.execute("PRAGMA table_info(minds)")
+            columns = [col[1] for col in cursor.fetchall()]
+            if 'summary' not in columns:
+                cursor.execute("ALTER TABLE minds ADD COLUMN summary TEXT")
+
             conn.commit()
             logger.info("数据库初始化完成")
 
@@ -159,6 +187,8 @@ class Database:
                 "title": row["title"],
                 "north_star": row["north_star"],
                 "crystal": json.loads(row["crystal_json"]) if row["crystal_json"] else None,
+                "summary": row["summary"],
+                "narrative": row["narrative"],
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"]
             }
@@ -175,9 +205,33 @@ class Database:
                 "title": row["title"],
                 "north_star": row["north_star"],
                 "crystal": json.loads(row["crystal_json"]) if row["crystal_json"] else None,
+                "summary": row["summary"] if "summary" in row.keys() else None,
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"]
             } for row in rows]
+
+    def delete_mind(self, mind_id: str) -> bool:
+        """删除 Mind 及其所有关联数据"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # 删除关联的 feed_items
+            cursor.execute("DELETE FROM feed_items WHERE mind_id = ?", (mind_id,))
+
+            # 删除关联的 timeline_events
+            cursor.execute("DELETE FROM timeline_events WHERE mind_id = ?", (mind_id,))
+
+            # 删除关联的 output_tasks
+            cursor.execute("DELETE FROM output_tasks WHERE mind_id = ?", (mind_id,))
+
+            # 删除关联的 mind_tags
+            cursor.execute("DELETE FROM mind_tags WHERE mind_id = ?", (mind_id,))
+
+            # 删除 Mind 本身
+            cursor.execute("DELETE FROM minds WHERE id = ?", (mind_id,))
+
+            conn.commit()
+            return cursor.rowcount > 0
 
     def update_crystal(self, mind_id: str, crystal: Dict[str, Any], summary: str = None) -> bool:
         """更新 Crystal"""
@@ -375,6 +429,91 @@ class Database:
             "description": description,
             "updated_at": now
         }
+
+    # ========== 概述和标签操作 ==========
+
+    def update_mind_summary(self, mind_id: str, summary: str) -> bool:
+        """更新 Mind 概述"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE minds SET summary = ?, updated_at = ? WHERE id = ?
+            """, (summary, now, mind_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def update_mind_narrative(self, mind_id: str, narrative: str) -> bool:
+        """更新 Mind 叙事"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE minds SET narrative = ?, updated_at = ? WHERE id = ?
+            """, (narrative, now, mind_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_all_tags(self) -> List[Dict[str, Any]]:
+        """获取全局标签库"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM tags ORDER BY name")
+            rows = cursor.fetchall()
+            return [{
+                "id": row["id"],
+                "name": row["name"],
+                "created_at": row["created_at"]
+            } for row in rows]
+
+    def get_or_create_tag(self, tag_name: str) -> int:
+        """获取或创建标签，返回标签 ID"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            return self._get_or_create_tag_with_conn(conn, tag_name, now)
+
+    def _get_or_create_tag_with_conn(self, conn, tag_name: str, now: str) -> int:
+        """内部方法：在已有连接中获取或创建标签"""
+        cursor = conn.cursor()
+        # 先尝试获取
+        cursor.execute("SELECT id FROM tags WHERE name = ?", (tag_name,))
+        row = cursor.fetchone()
+        if row:
+            return row["id"]
+        # 不存在则创建
+        cursor.execute("""
+            INSERT INTO tags (name, created_at) VALUES (?, ?)
+        """, (tag_name, now))
+        conn.commit()
+        return cursor.lastrowid
+
+    def get_mind_tags(self, mind_id: str) -> List[str]:
+        """获取 Mind 的标签列表"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT t.name FROM tags t
+                JOIN mind_tags mt ON t.id = mt.tag_id
+                WHERE mt.mind_id = ?
+                ORDER BY t.name
+            """, (mind_id,))
+            rows = cursor.fetchall()
+            return [row["name"] for row in rows]
+
+    def set_mind_tags(self, mind_id: str, tag_names: List[str]) -> None:
+        """设置 Mind 的标签（替换现有标签）"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            # 删除现有标签关联
+            cursor.execute("DELETE FROM mind_tags WHERE mind_id = ?", (mind_id,))
+            # 添加新标签（使用同一连接）
+            for tag_name in tag_names[:5]:  # 最多 5 个标签
+                tag_id = self._get_or_create_tag_with_conn(conn, tag_name.strip(), now)
+                cursor.execute("""
+                    INSERT OR IGNORE INTO mind_tags (mind_id, tag_id) VALUES (?, ?)
+                """, (mind_id, tag_id))
+            conn.commit()
 
 
 # 全局数据库实例

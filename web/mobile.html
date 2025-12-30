@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>MindLink - Crystal System</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=20251230a">
+</head>
+
+<body>
+    <!-- ====== APP CONTAINER ====== -->
+    <div data-logic-id="app-container">
+
+        <!-- HEADER -->
+        <header data-logic-id="top-bar">
+            <button id="menuBtn" data-logic-id="menu-button">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M3 12h18M3 6h18M3 18h18" />
+                </svg>
+            </button>
+            <h1 id="pageTitle" data-logic-id="page-title">MindLink</h1>
+            <button id="createMindBtn" data-logic-id="create-mind-button">
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- DRAWER: 侧边栏 -->
+        <aside id="drawer" data-logic-id="drawer">
+            <div data-logic-id="drawer-header">
+                <h2>Mind 晶体库</h2>
+                <button id="closeDrawerBtn" data-logic-id="close-drawer-button">
+                    <svg class="icon-svg" viewBox="0 0 24 24">
+                        <path d="M18 6L6 18M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="mindList" data-logic-id="mind-list"></div>
+            <a href="/admin" data-logic-id="admin-link">Prompt Engineering</a>
+        </aside>
+        <div id="drawerOverlay" data-logic-id="drawer-overlay"></div>
+
+        <!-- MAIN CONTENT -->
+        <main data-logic-id="main-content">
+            <!-- Empty State -->
+            <section id="emptyState" data-logic-id="empty-state">
+                <div data-logic-id="empty-icon"></div>
+                <h2>启动思维晶体</h2>
+                <p style="color: var(--text-muted); margin-top: 8px;">选择一个主题开始构建神经链接</p>
+                <button id="emptyCreateBtn" data-logic-id="empty-create-button">创建新 Mind</button>
+            </section>
+
+            <!-- Mind Detail -->
+            <section id="mindDetail" data-logic-id="mind-detail" hidden>
+                <h2 id="mindTitle" data-logic-id="mind-title-hidden" hidden></h2>
+
+                <!-- Top Tabs: 只读视图 -->
+                <nav data-logic-id="top-tabs" id="topTabs">
+                    <button class="top-tab-btn" data-tab="structure">结构</button>
+                    <button class="top-tab-btn" data-tab="timeline">时间轴</button>
+                    <button class="top-tab-btn" data-tab="narrative">叙事</button>
+                </nav>
+
+                <!-- Tab Content -->
+                <div data-logic-id="tab-content">
+                    <!-- Feed: 投喂 -->
+                    <section id="feedTab" data-logic-id="tab-feed" class="active">
+                        <textarea id="feedInput" data-logic-id="feed-input" placeholder="输入零散的想法、灵感或事实..."></textarea>
+                        <button id="feedBtn" data-logic-id="feed-submit-button">注入晶体 (Feed)</button>
+                        <div id="feedStatus" data-logic-id="feed-status"></div>
+                    </section>
+
+                    <!-- Chat: 对话 -->
+                    <section id="chatTab" data-logic-id="tab-chat">
+                        <div data-logic-id="chat-controls">
+                            <select id="chatModel" data-logic-id="chat-model-select">
+                                <option value="google_gemini_3_flash">Gemini Flash</option>
+                                <option value="google_gemini_3_pro">Gemini Pro</option>
+                            </select>
+                            <select id="chatStyle" data-logic-id="chat-style-select">
+                                <option value="default">理性分析</option>
+                                <option value="socratic">苏格拉底</option>
+                                <option value="creative">创意发散</option>
+                            </select>
+                            <button id="clearChatBtn" data-logic-id="chat-clear-button">清空</button>
+                        </div>
+                        <div id="chatMessages" data-logic-id="chat-messages-container">
+                            <div data-logic-id="chat-welcome">
+                                <p>思维网络已连接。</p>
+                                <p>我们可以开始对当前主题进行更深层的探讨。</p>
+                            </div>
+                        </div>
+                        <div data-logic-id="chat-input-area">
+                            <textarea id="chatInput" data-logic-id="chat-input" placeholder="发送消息..."
+                                rows="1"></textarea>
+                            <button id="sendChatBtn" data-logic-id="chat-send-button">
+                                <svg class="icon-svg" style="width:18px;height:18px;stroke:black" viewBox="0 0 24 24">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Structure: 结构 -->
+                    <section id="structureTab" data-logic-id="tab-structure">
+                        <div id="structureContent" data-logic-id="structure-content"></div>
+                    </section>
+
+                    <!-- Timeline: 时间轴 -->
+                    <section id="timelineTab" data-logic-id="tab-timeline">
+                        <div id="timelineContent" data-logic-id="timeline-content"></div>
+                    </section>
+
+                    <!-- Narrative: 叙事 -->
+                    <section id="narrativeTab" data-logic-id="tab-narrative">
+                        <div data-logic-id="narrative-header"
+                            style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                            <span style="color:var(--text-muted); font-size:12px; text-transform:uppercase;">Narrative
+                                View</span>
+                            <button id="generateNarrativeBtn" data-logic-id="narrative-generate-button"
+                                style="color:var(--accent-primary); font-size:12px;">重新生成</button>
+                        </div>
+                        <div id="narrativeContent" data-logic-id="narrative-content"></div>
+                    </section>
+
+                    <!-- Output: 输出 -->
+                    <section id="outputTab" data-logic-id="tab-output">
+                        <div data-logic-id="output-input-area">
+                            <input type="text" id="outputInstruction" data-logic-id="output-instruction-input"
+                                placeholder="输入输出指令 (例如: 简报、邮件...)">
+                            <button id="outputBtn" data-logic-id="output-generate-button">生成</button>
+                        </div>
+                        <div id="outputResult" data-logic-id="output-result">
+                            <p style="color:var(--text-muted); text-align:center; padding-top:40px;">结构化输出将显示在这里</p>
+                        </div>
+                    </section>
+                </div>
+            </section>
+        </main>
+
+        <!-- BOTTOM NAV: 底部导航 -->
+        <nav data-logic-id="bottom-nav" id="bottomNav">
+            <button class="bottom-nav-btn active" data-tab="feed">
+                <svg viewBox="0 0 24 24">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+                <span class="nav-label">投喂</span>
+            </button>
+            <button class="bottom-nav-btn" data-tab="chat">
+                <svg viewBox="0 0 24 24">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span class="nav-label">对话</span>
+            </button>
+            <button class="bottom-nav-btn" data-tab="output">
+                <svg viewBox="0 0 24 24">
+                    <polyline points="16 16 12 12 8 16" />
+                    <line x1="12" y1="12" x2="12" y2="21" />
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
+                    <polyline points="16 16 12 12 8 16" />
+                </svg>
+                <span class="nav-label">输出</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MODAL: 创建 Mind -->
+    <dialog id="createMindModal" data-logic-id="create-mind-modal">
+        <h3>新建思维晶体</h3>
+        <p style="color:var(--text-muted); font-size:13px;">为这个思考方向命名</p>
+        <input type="text" id="newMindTitle" data-logic-id="new-mind-title-input" placeholder="例如：产品哲学、生活琐事...">
+        <div data-logic-id="modal-actions">
+            <button id="modalCancelBtn" data-logic-id="modal-cancel-button">取消</button>
+            <button id="modalCreateBtn" data-logic-id="modal-create-button">创建</button>
+        </div>
+    </dialog>
+
+    <!-- JS: 业务逻辑 -->
+    <script src="/static/js/mobile.js?v=20251230a"></script>
+</body>
+
+</html>

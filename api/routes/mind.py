@@ -23,6 +23,9 @@ class MindResponse(BaseModel):
     id: str
     title: str
     north_star: Optional[str] = None
+    summary: Optional[str] = None
+    narrative: Optional[str] = None
+    tags: List[str] = []
     crystal_markdown: Optional[str] = None
     created_at: str
     updated_at: str
@@ -70,6 +73,8 @@ async def create_mind(request: MindCreate):
         id=mind["id"],
         title=mind["title"],
         north_star=mind.get("north_star"),
+        summary=None,
+        tags=[],
         crystal_markdown=format_crystal_markdown(mind.get("crystal")),
         created_at=mind["created_at"],
         updated_at=mind["updated_at"]
@@ -81,17 +86,21 @@ async def list_minds():
     """获取所有 Mind 列表"""
     minds = db.list_minds()
 
-    return MindListResponse(minds=[
-        MindResponse(
+    result = []
+    for m in minds:
+        tags = db.get_mind_tags(m["id"])
+        result.append(MindResponse(
             id=m["id"],
             title=m["title"],
             north_star=m.get("north_star"),
+            summary=m.get("summary"),
+            tags=tags,
             crystal_markdown=None,  # 列表不返回完整 Crystal
             created_at=m["created_at"],
             updated_at=m["updated_at"]
-        )
-        for m in minds
-    ])
+        ))
+
+    return MindListResponse(minds=result)
 
 
 @router.get("/{mind_id}", response_model=MindResponse)
@@ -102,14 +111,35 @@ async def get_mind(mind_id: str):
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
+    tags = db.get_mind_tags(mind_id)
+
     return MindResponse(
         id=mind["id"],
         title=mind["title"],
         north_star=mind.get("north_star"),
+        summary=mind.get("summary"),
+        narrative=mind.get("narrative"),
+        tags=tags,
         crystal_markdown=format_crystal_markdown(mind.get("crystal")),
         created_at=mind["created_at"],
         updated_at=mind["updated_at"]
     )
+
+
+@router.delete("/{mind_id}")
+async def delete_mind(mind_id: str):
+    """删除 Mind 及其所有关联数据"""
+    mind = db.get_mind(mind_id)
+
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    success = db.delete_mind(mind_id)
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete mind")
+
+    return {"success": True, "message": f"Mind '{mind['title']}' 已删除"}
 
 
 @router.get("/{mind_id}/crystal", response_model=CrystalResponse)

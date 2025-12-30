@@ -2,8 +2,9 @@
 MindLink API - 主入口
 """
 import os
+import re
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
@@ -14,6 +15,12 @@ from api.routes import mind, feed, admin, chat
 # 项目根目录（api 目录的父目录）
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR = BASE_DIR / "web"
+
+# 移动端 User-Agent 正则
+MOBILE_PATTERN = re.compile(
+    r'Mobile|Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini',
+    re.IGNORECASE
+)
 
 # 配置日志
 logging.basicConfig(
@@ -49,9 +56,29 @@ app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
 
 
+def is_mobile(request: Request) -> bool:
+    """检测是否为移动设备"""
+    user_agent = request.headers.get("user-agent", "")
+    return bool(MOBILE_PATTERN.search(user_agent))
+
+
 @app.get("/")
-async def root():
-    """首页"""
+async def root(request: Request):
+    """首页 - 根据设备返回不同页面"""
+    if is_mobile(request):
+        return FileResponse(str(WEB_DIR / "mobile.html"))
+    return FileResponse(str(WEB_DIR / "index.html"))
+
+
+@app.get("/mobile")
+async def mobile_page():
+    """强制访问移动端页面（调试用）"""
+    return FileResponse(str(WEB_DIR / "mobile.html"))
+
+
+@app.get("/desktop")
+async def desktop_page():
+    """强制访问桌面端页面（调试用）"""
     return FileResponse(str(WEB_DIR / "index.html"))
 
 

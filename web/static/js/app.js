@@ -78,9 +78,6 @@ function setupEventListeners() {
     // 输出按钮
     document.getElementById('outputBtn').addEventListener('click', generateOutput);
 
-    // 刷新导图按钮
-    document.getElementById('refreshMindmapBtn').addEventListener('click', loadMindmap);
-
     // 对话相关
     document.getElementById('sendChatBtn').addEventListener('click', sendChatMessage);
     document.getElementById('clearChatBtn').addEventListener('click', clearChat);
@@ -135,13 +132,32 @@ async function loadMinds() {
             if (mind.id === currentMindId) {
                 item.dataset.active = 'true';
             }
+
+            // 构建概述显示（如果有）
+            const summaryHtml = mind.summary
+                ? `<p class="mind-summary">${escapeHtml(mind.summary)}</p>`
+                : '';
+
             item.innerHTML = `
-                <h3>${escapeHtml(mind.title)}</h3>
-                <span>${formatDate(mind.updated_at)}</span>
+                <div class="mind-item-content">
+                    <h3>${escapeHtml(mind.title)}</h3>
+                    ${summaryHtml}
+                    <span>${formatDate(mind.updated_at)}</span>
+                </div>
+                <button class="mind-delete-btn" title="删除">×</button>
             `;
-            item.addEventListener('click', () => {
+
+            // 点击内容区选择 Mind
+            item.querySelector('.mind-item-content').addEventListener('click', () => {
                 selectMind(mind.id);
             });
+
+            // 点击删除按钮
+            item.querySelector('.mind-delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止冒泡到父元素
+                deleteMind(mind.id);
+            });
+
             mindList.appendChild(item);
         });
     } catch (error) {
@@ -167,10 +183,12 @@ async function selectMind(mindId) {
     emptyState.style.display = 'none';
     mindDetail.style.display = 'flex';
 
-    // 移动端：添加 show-detail 类，自动隐藏侧边栏
+    // 桌面端：添加 show-detail 类，自动隐藏侧边栏
     const appContainer = document.querySelector('[data-logic-id="app-container"]');
-    appContainer.classList.add('show-detail');
-    appContainer.classList.remove('sidebar-open');
+    if (appContainer) {
+        appContainer.classList.add('show-detail');
+        appContainer.classList.remove('sidebar-open');
+    }
 
     // 重置对话区
     chatMessages.innerHTML = `
@@ -180,6 +198,9 @@ async function selectMind(mindId) {
         </div>
     `;
 
+    // 清空输出内容（避免显示其他 Mind 的内容）
+    document.getElementById('outputResult').innerHTML = '';
+
     // 加载详情
     try {
         const response = await fetch(`${API_BASE}/minds/${mindId}`);
@@ -188,6 +209,16 @@ async function selectMind(mindId) {
         }
         const mind = await response.json();
         mindTitle.textContent = mind.title;
+
+        // 显示概述和标签
+        updateSummaryAndTags(mind.summary, mind.tags);
+
+        // 显示已保存的叙事（如果有）
+        if (mind.narrative) {
+            narrativeContent.innerHTML = `<div data-logic-id="narrative-text">${markdownToHtml(mind.narrative)}</div>`;
+        } else {
+            narrativeContent.innerHTML = '<p style="color: var(--text-dim);">点击上方"生成叙事"按钮生成内容</p>';
+        }
 
         // 加载时间轴和结构
         await Promise.all([
@@ -215,15 +246,24 @@ async function loadTimeline() {
             return;
         }
 
+        // 倒序：最新的排在最前
+        const reversedTimeline = [...data.timeline].reverse();
+        reversedTimeline.forEach(day => {
+            day.items = [...day.items].reverse();
+        });
+
         let html = '<div data-logic-id="timeline-list">';
-        data.timeline.forEach(day => {
+        let isFirst = true;
+        reversedTimeline.forEach(day => {
             html += `<div data-logic-id="timeline-day">
                 <div data-logic-id="timeline-date">${day.date}</div>`;
             day.items.forEach(item => {
-                html += `<div data-logic-id="timeline-item">
-                    <span data-logic-id="timeline-time">${item.time}</span>
+                const currentTag = isFirst ? '<span data-logic-id="timeline-current-tag">当前</span>' : '';
+                html += `<div data-logic-id="timeline-item"${isFirst ? ' data-current="true"' : ''}>
+                    <span data-logic-id="timeline-time">${item.time}${currentTag}</span>
                     <div data-logic-id="timeline-text">${escapeHtml(item.content)}</div>
                 </div>`;
+                isFirst = false;
             });
             html += '</div>';
         });
@@ -276,6 +316,13 @@ async function generateNarrative() {
 
         if (data.narrative) {
             narrativeContent.innerHTML = `<div data-logic-id="narrative-text">${markdownToHtml(data.narrative)}</div>`;
+
+            // 如果概述或标签有更新，刷新显示
+            if (data.summary_changed || data.tags_changed) {
+                updateSummaryAndTags(data.summary, data.tags);
+                // 同时刷新列表（更新概述显示）
+                loadMinds();
+            }
         } else {
             narrativeContent.innerHTML = '<p>暂无内容</p>';
         }
@@ -312,6 +359,53 @@ async function createMind() {
     }
 }
 
+// 删除 Mind
+async function deleteMind(mindId) {
+    if (!mindId) return;
+
+    // 获取 Mind 标题用于确认
+    const mindItem = document.querySelector(`[data-mind-id="${mindId}"]`);
+    const title = mindItem ? mindItem.querySelector('h3')?.textContent : 'Mind';
+
+    if (!confirm(`确定要删除「${title}」吗？\n\n此操作不可恢复，将删除所有相关的记录和数据。`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${mindId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            // 如果删除的是当前选中的 Mind，重置状态
+            if (currentMindId === mindId) {
+                currentMindId = null;
+                emptyState.style.display = 'flex';
+                mindDetail.style.display = 'none';
+
+                // 移动端：隐藏底部导航
+                const bottomNav = document.getElementById('bottomNav');
+                if (bottomNav) {
+                    bottomNav.style.display = 'none';
+                }
+
+                // 移动端：重置标题
+                const pageTitle = document.getElementById('pageTitle');
+                if (pageTitle) {
+                    pageTitle.textContent = 'MindLink';
+                }
+            }
+            await loadMinds();
+        } else {
+            const error = await response.json();
+            alert('删除失败: ' + (error.detail || '未知错误'));
+        }
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+    }
+}
+
 // 关闭弹窗
 function closeModal() {
     document.getElementById('createMindModal').close();
@@ -339,12 +433,8 @@ async function submitFeed() {
             feedInput.value = '';
             feedStatus.textContent = '已记录，正在去噪和更新结构...';
 
-            // 延迟刷新，等待后台处理
-            setTimeout(async () => {
-                await Promise.all([
-                    loadTimeline(),
-                    loadStructure()
-                ]);
+            // 延迟更新状态文本
+            setTimeout(() => {
                 feedStatus.textContent = '处理完成';
             }, 3000);
 
@@ -393,82 +483,43 @@ async function generateOutput() {
     }
 }
 
-// 加载思维导图
-async function loadMindmap() {
-    if (!currentMindId) return;
-
-    const container = document.getElementById('mindmapContainer');
-    container.innerHTML = '<div style="text-align: center; color: var(--text-dim);">正在生成思维导图...</div>';
-
-    try {
-        const response = await fetch(`${API_BASE}/minds/${currentMindId}/mindmap`);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        const data = await response.json();
-
-        if (data.mindmap && data.mindmap.branches && data.mindmap.branches.length > 0) {
-            renderMindmap(data.mindmap);
-        } else {
-            container.innerHTML = '<p style="color: var(--text-dim); text-align: center;">还没有足够的内容生成导图</p>';
-        }
-    } catch (error) {
-        console.error('加载导图失败:', error);
-        container.innerHTML = '<p>加载失败</p>';
-    }
-}
-
-// 渲染思维导图
-function renderMindmap(mindmap) {
-    const container = document.getElementById('mindmapContainer');
-
-    let html = '<div data-logic-id="mindmap-tree">';
-    html += `<div data-logic-id="tree-center">${escapeHtml(mindmap.center)}</div>`;
-    html += '<div data-logic-id="tree-branches">';
-
-    mindmap.branches.forEach(branch => {
-        const isPending = branch.type === 'pending';
-        html += `<div data-logic-id="tree-branch" data-pending="${isPending}">
-            <div data-logic-id="branch-label">${escapeHtml(branch.label)}${isPending ? ' ❓' : ''}</div>`;
-
-        if (branch.children && branch.children.length > 0) {
-            html += '<ul data-logic-id="branch-children">';
-            branch.children.forEach(child => {
-                html += `<li>${escapeHtml(child)}</li>`;
-            });
-            html += '</ul>';
-        }
-        html += '</div>';
-    });
-
-    html += '</div></div>';
-    container.innerHTML = html;
-}
-
 // 切换标签页
 function switchTab(tabName) {
-    // 更新标签按钮状态
+    // 更新标签按钮状态（同时支持 data-active 和 class）
     document.querySelectorAll('[data-tab]').forEach(tab => {
         if (tab.dataset.tab === tabName) {
             tab.dataset.active = 'true';
+            tab.classList.add('active');
         } else {
             delete tab.dataset.active;
+            tab.classList.remove('active');
         }
     });
 
-    // 更新内容显示
-    const allTabs = ['feed', 'chat', 'timeline', 'narrative', 'structure', 'mindmap', 'output'];
+    // 更新内容显示（同时支持 style.display 和 CSS 类）
+    const allTabs = ['feed', 'chat', 'timeline', 'narrative', 'structure', 'output'];
     allTabs.forEach(tab => {
         const element = document.getElementById(`${tab}Tab`);
         if (element) {
             if (tab === tabName) {
                 // Chat Tab 需要 flex 布局
                 element.style.display = (tab === 'chat') ? 'flex' : 'block';
+                element.classList.add('active');
             } else {
                 element.style.display = 'none';
+                element.classList.remove('active');
             }
         }
     });
+
+    // 切换到结构/时间轴 Tab 时，总是刷新最新数据
+    if (currentMindId) {
+        if (tabName === 'structure') {
+            loadStructure();
+        } else if (tabName === 'timeline') {
+            loadTimeline();
+        }
+    }
 }
 
 // ========== 对话功能 ==========
@@ -579,6 +630,41 @@ function clearChat() {
 }
 
 // ========== 工具函数 ==========
+
+// 更新概述和标签显示
+function updateSummaryAndTags(summary, tags) {
+    const summaryArea = document.getElementById('summaryArea');
+    const aiBrief = document.getElementById('aiBrief');
+    const tagCloud = document.getElementById('tagCloud');
+
+    // 如果元素不存在（如移动端独立处理），跳过
+    if (!summaryArea || !aiBrief || !tagCloud) return;
+
+    // 如果有概述或标签，显示区域
+    if (summary || (tags && tags.length > 0)) {
+        summaryArea.style.display = 'block';
+
+        // 显示概述
+        if (summary) {
+            aiBrief.textContent = summary;
+            aiBrief.style.display = 'block';
+        } else {
+            aiBrief.style.display = 'none';
+        }
+
+        // 显示标签
+        if (tags && tags.length > 0) {
+            tagCloud.innerHTML = tags.map(tag =>
+                `<span class="crystal-tag"># ${escapeHtml(tag)}</span>`
+            ).join('');
+            tagCloud.style.display = 'flex';
+        } else {
+            tagCloud.style.display = 'none';
+        }
+    } else {
+        summaryArea.style.display = 'none';
+    }
+}
 
 // 返回列表（移动端）
 function goBackToList() {
