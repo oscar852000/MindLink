@@ -471,7 +471,6 @@ section[id$="Tab"].active {
 }
 
 [data-logic-id="chat-message"] {
-    width: 100%;
     padding: 16px 0;
     font-size: 15px;
     line-height: 1.7;
@@ -488,7 +487,9 @@ section[id$="Tab"].active {
     opacity: 0.5;
 }
 
+/* AI 回复：全宽 */
 [data-role="assistant"] {
+    width: 100%;
     color: rgba(255, 255, 255, 0.9);
 }
 
@@ -497,13 +498,20 @@ section[id$="Tab"].active {
     color: var(--accent-primary);
 }
 
+/* 用户消息：右对齐气泡 */
 [data-role="user"] {
-    color: rgba(255, 255, 255, 0.85);
+    max-width: 85%;
+    align-self: flex-end;
+    background: linear-gradient(135deg, rgba(123, 97, 255, 0.3), rgba(123, 97, 255, 0.1));
+    border: 1px solid rgba(123, 97, 255, 0.2);
+    border-radius: 16px 16px 4px 16px;
+    padding: 12px 16px;
+    border-bottom: none;
+    color: rgba(255, 255, 255, 0.9);
 }
 
 [data-role="user"]::before {
-    content: "你";
-    color: var(--text-muted);
+    display: none;
 }
 
 [data-logic-id="chat-input-area"] {

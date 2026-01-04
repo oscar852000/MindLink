@@ -526,6 +526,12 @@ function switchTab(tabName) {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
+    // 对话模式下隐藏 top-tabs，其他模式显示
+    const topTabs = document.getElementById('topTabs');
+    if (topTabs) {
+        topTabs.style.display = (tabName === 'chat') ? 'none' : 'flex';
+    }
+
     // 显示对应内容
     ['feed', 'chat', 'timeline', 'narrative', 'structure', 'output'].forEach(t => {
         const el = document.getElementById(`${t}Tab`);

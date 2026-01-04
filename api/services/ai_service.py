@@ -136,7 +136,7 @@ async def clean_and_update_structure(
     ]
 
     try:
-        result = await call_ai(messages, thinking_level="medium", max_tokens=4096)
+        result = await call_ai(messages, thinking_level="medium", max_tokens=15000)
         data = _parse_json_response(result)
 
         cleaned_content = data.get("cleaned_content", content)
@@ -226,7 +226,7 @@ async def generate_narrative_with_meta(
     ]
 
     try:
-        result = await call_ai(messages, thinking_level="medium", max_tokens=8192)
+        result = await call_ai(messages, thinking_level="medium", max_tokens=15000)
         data = _parse_json_response(result)
 
         return {
@@ -313,7 +313,7 @@ async def generate_output(
         {"role": "user", "content": user_prompt}
     ]
 
-    return await call_ai(messages, thinking_level="medium", max_tokens=4096)
+    return await call_ai(messages, thinking_level="medium", max_tokens=15000)
 
 
 # ============================================================

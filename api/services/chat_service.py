@@ -52,7 +52,7 @@ def _build_system_prompt(mind: Dict[str, Any], style: str) -> str:
     if cleaned_feeds:
         timeline_content = "\n".join([
             f"- [{f['created_at'][:16]}] {f['cleaned_content']}"
-            for f in cleaned_feeds[-20:]  # 最近20条
+            for f in cleaned_feeds[-100:]  # 最近100条
         ])
     else:
         timeline_content = "暂无记录"
@@ -123,6 +123,6 @@ async def chat_with_mind(
     return await call_ai(
         messages=messages,
         thinking_level=thinking_level,
-        max_tokens=2048,
+        max_tokens=15000,
         model=model
     )
