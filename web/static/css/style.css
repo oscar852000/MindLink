@@ -520,6 +520,83 @@ body {
     border-left: 3px solid var(--primary);
 }
 
+/* Timeline Edit Menu */
+.timeline-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    position: relative;
+}
+
+.timeline-menu-btn {
+    padding: 4px 8px;
+    color: var(--text-dim);
+    opacity: 0.5;
+    cursor: pointer;
+    background: none;
+    border: none;
+    transition: opacity 0.2s;
+}
+
+.timeline-menu-btn:hover {
+    opacity: 1;
+}
+
+.timeline-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px 0;
+    min-width: 80px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 50;
+    display: none;
+}
+
+.timeline-dropdown.show {
+    display: block;
+}
+
+.timeline-dropdown button {
+    width: 100%;
+    padding: 10px 16px;
+    text-align: left;
+    color: var(--text-main);
+    font-size: 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.timeline-dropdown button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.timeline-dropdown .delete-btn {
+    color: #ff4444;
+}
+
+/* Edit Feed Modal */
+#editFeedContent {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 16px 0 24px 0;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
 /* 模态框样式 */
 dialog {
     background: var(--bg-surface);

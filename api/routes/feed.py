@@ -123,6 +123,29 @@ async def get_feeds(mind_id: str, limit: int = 20):
     ])
 
 
+class UpdateFeedRequest(BaseModel):
+    """更新投喂请求"""
+    content: str
+
+
+@router.put("/feeds/{feed_id}")
+async def update_feed(feed_id: str, request: UpdateFeedRequest):
+    """更新投喂内容（直接更新 cleaned_content）"""
+    result = db.update_feed_content(feed_id, request.content)
+    if not result:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    return {"status": "ok", "message": "已更新"}
+
+
+@router.delete("/feeds/{feed_id}")
+async def delete_feed(feed_id: str):
+    """删除投喂"""
+    result = db.delete_feed(feed_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Feed not found")
+    return {"status": "ok", "message": "已删除"}
+
+
 @router.post("/minds/{mind_id}/output", response_model=OutputResponse)
 async def generate_mind_output(mind_id: str, request: OutputRequest):
     """根据指令生成输出（基于去噪内容）"""

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MindLink - 持续清醒的第二大脑</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/static/css/style.css?v=20251229f">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260104a">
 </head>
 
 <body>
@@ -153,7 +153,20 @@
         </div>
     </dialog>
 
-    <script src="/static/js/app.js?v=20260104a"></script>
+    <!-- Modal: Edit Feed -->
+    <dialog id="editFeedModal" data-logic-id="edit-feed-modal">
+        <div data-logic-id="modal-content">
+            <h3 style="margin-top: 0;">编辑记录</h3>
+            <input type="hidden" id="editFeedId">
+            <textarea id="editFeedContent" data-logic-id="edit-feed-content" rows="5" placeholder="输入内容..."></textarea>
+            <div data-logic-id="modal-actions">
+                <button onclick="document.getElementById('editFeedModal').close()">取消</button>
+                <button onclick="saveTimelineEdit()" id="editSaveBtn" style="background: var(--primary); color: var(--bg-deep);">保存</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="/static/js/app.js?v=20260104b"></script>
 </body>
 
 </html>

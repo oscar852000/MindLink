@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MindLink - Crystal System</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/static/css/mobile.css?v=20260104c">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=20260104d">
 </head>
 
 <body>
@@ -181,8 +181,19 @@
         </div>
     </dialog>
 
+    <!-- MODAL: 编辑时间轴 -->
+    <dialog id="editFeedModal" data-logic-id="edit-feed-modal">
+        <h3>编辑记录</h3>
+        <input type="hidden" id="editFeedId">
+        <textarea id="editFeedContent" data-logic-id="edit-feed-content" rows="5" placeholder="输入内容..."></textarea>
+        <div data-logic-id="modal-actions">
+            <button onclick="document.getElementById('editFeedModal').close()">取消</button>
+            <button onclick="saveTimelineEdit()" id="editSaveBtn">保存</button>
+        </div>
+    </dialog>
+
     <!-- JS: 业务逻辑 -->
-    <script src="/static/js/mobile.js?v=20260104b"></script>
+    <script src="/static/js/mobile.js?v=20260104c"></script>
 </body>
 
 </html>

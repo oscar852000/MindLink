@@ -325,6 +325,24 @@ class Database:
             conn.commit()
             return cursor.rowcount > 0
 
+    def update_feed_content(self, feed_id: str, content: str) -> bool:
+        """更新投喂内容（同时更新原始内容和去噪内容）"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE feed_items SET content = ?, cleaned_content = ? WHERE id = ?
+            """, (content, content, feed_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_feed(self, feed_id: str) -> bool:
+        """删除投喂"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM feed_items WHERE id = ?", (feed_id,))
+            conn.commit()
+            return cursor.rowcount > 0
+
     def get_all_cleaned_feeds(self, mind_id: str) -> List[Dict[str, Any]]:
         """获取所有已去噪的投喂（用于生成叙事视图）"""
         with self.get_connection() as conn:

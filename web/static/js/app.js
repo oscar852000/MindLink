@@ -30,6 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     // 默认激活第一个Tab
     switchTab('feed');
+
+    // 点击空白处关闭下拉菜单
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.timeline-menu-btn') && !e.target.closest('.timeline-dropdown')) {
+            document.querySelectorAll('.timeline-dropdown.show').forEach(d => d.classList.remove('show'));
+        }
+    });
 });
 
 // 设置事件监听
@@ -251,8 +258,21 @@ async function loadTimeline() {
                 <div data-logic-id="timeline-date">${day.date}</div>`;
             day.items.forEach(item => {
                 const currentTag = isFirst ? '<span data-logic-id="timeline-current-tag">当前</span>' : '';
-                html += `<div data-logic-id="timeline-item"${isFirst ? ' data-current="true"' : ''}>
-                    <span data-logic-id="timeline-time">${item.time}${currentTag}</span>
+                html += `<div data-logic-id="timeline-item" data-feed-id="${item.id}"${isFirst ? ' data-current="true"' : ''}>
+                    <div class="timeline-item-header">
+                        <span data-logic-id="timeline-time">${item.time}${currentTag}</span>
+                        <button class="timeline-menu-btn" onclick="toggleTimelineMenu(event, '${item.id}')">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
+                                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                                <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
+                            </svg>
+                        </button>
+                        <div class="timeline-dropdown" id="dropdown-${item.id}">
+                            <button onclick="editTimelineItem('${item.id}')">编辑</button>
+                            <button onclick="deleteTimelineItem('${item.id}')" class="delete-btn">删除</button>
+                        </div>
+                    </div>
                     <div data-logic-id="timeline-text">${escapeHtml(item.content)}</div>
                 </div>`;
                 isFirst = false;
@@ -265,6 +285,86 @@ async function loadTimeline() {
     } catch (error) {
         console.error('加载时间轴失败:', error);
         timelineContent.innerHTML = '<p>加载失败</p>';
+    }
+}
+
+// 切换时间轴菜单显示
+function toggleTimelineMenu(event, feedId) {
+    event.stopPropagation();
+
+    // 关闭所有其他菜单
+    document.querySelectorAll('.timeline-dropdown.show').forEach(d => {
+        if (d.id !== `dropdown-${feedId}`) d.classList.remove('show');
+    });
+
+    const dropdown = document.getElementById(`dropdown-${feedId}`);
+    dropdown.classList.toggle('show');
+}
+
+// 编辑时间轴项
+function editTimelineItem(feedId) {
+    // 关闭菜单
+    document.querySelectorAll('.timeline-dropdown.show').forEach(d => d.classList.remove('show'));
+
+    // 获取当前内容
+    const item = document.querySelector(`[data-feed-id="${feedId}"]`);
+    const content = item.querySelector('[data-logic-id="timeline-text"]').textContent;
+
+    // 填充编辑弹窗
+    document.getElementById('editFeedId').value = feedId;
+    document.getElementById('editFeedContent').value = content;
+    document.getElementById('editFeedModal').showModal();
+}
+
+// 保存编辑
+async function saveTimelineEdit() {
+    const feedId = document.getElementById('editFeedId').value;
+    const content = document.getElementById('editFeedContent').value.trim();
+
+    if (!content) {
+        alert('内容不能为空');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/feeds/${feedId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content })
+        });
+
+        if (response.ok) {
+            document.getElementById('editFeedModal').close();
+            loadTimeline();  // 刷新时间轴
+        } else {
+            alert('保存失败');
+        }
+    } catch (error) {
+        console.error('保存失败:', error);
+        alert('保存失败');
+    }
+}
+
+// 删除时间轴项
+async function deleteTimelineItem(feedId) {
+    // 关闭菜单
+    document.querySelectorAll('.timeline-dropdown.show').forEach(d => d.classList.remove('show'));
+
+    if (!confirm('确定要删除这条记录吗？')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/feeds/${feedId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            loadTimeline();  // 刷新时间轴
+        } else {
+            alert('删除失败');
+        }
+    } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败');
     }
 }
 
