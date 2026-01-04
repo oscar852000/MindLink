@@ -130,6 +130,20 @@ class Database:
                 )
             """)
 
+            # Chat 消息表（对话记录）
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    mind_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    model TEXT,
+                    style TEXT,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (mind_id) REFERENCES minds(id)
+                )
+            """)
+
             # 检查并添加 minds.summary 字段（兼容旧数据库）
             cursor.execute("PRAGMA table_info(minds)")
             columns = [col[1] for col in cursor.fetchall()]
@@ -226,6 +240,9 @@ class Database:
 
             # 删除关联的 mind_tags
             cursor.execute("DELETE FROM mind_tags WHERE mind_id = ?", (mind_id,))
+
+            # 删除关联的 chat_messages
+            cursor.execute("DELETE FROM chat_messages WHERE mind_id = ?", (mind_id,))
 
             # 删除 Mind 本身
             cursor.execute("DELETE FROM minds WHERE id = ?", (mind_id,))
@@ -514,6 +531,57 @@ class Database:
                     INSERT OR IGNORE INTO mind_tags (mind_id, tag_id) VALUES (?, ?)
                 """, (mind_id, tag_id))
             conn.commit()
+
+    # ========== Chat 消息操作 ==========
+
+    def add_chat_message(self, mind_id: str, role: str, content: str,
+                         model: str = None, style: str = None) -> Dict[str, Any]:
+        """添加对话消息"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO chat_messages (mind_id, role, content, model, style, created_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (mind_id, role, content, model, style, now))
+            conn.commit()
+            return {
+                "id": cursor.lastrowid,
+                "mind_id": mind_id,
+                "role": role,
+                "content": content,
+                "model": model,
+                "style": style,
+                "created_at": now
+            }
+
+    def get_chat_history(self, mind_id: str, limit: int = 100) -> List[Dict[str, Any]]:
+        """获取对话历史"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM chat_messages
+                WHERE mind_id = ?
+                ORDER BY created_at ASC
+                LIMIT ?
+            """, (mind_id, limit))
+            rows = cursor.fetchall()
+            return [{
+                "id": row["id"],
+                "role": row["role"],
+                "content": row["content"],
+                "model": row["model"],
+                "style": row["style"],
+                "created_at": row["created_at"]
+            } for row in rows]
+
+    def clear_chat_history(self, mind_id: str) -> int:
+        """清空对话历史，返回删除的消息数"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM chat_messages WHERE mind_id = ?", (mind_id,))
+            conn.commit()
+            return cursor.rowcount
 
 
 # 全局数据库实例

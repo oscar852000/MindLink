@@ -27,7 +27,6 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     """对话请求"""
     message: str
-    history: List[ChatMessage] = []
     model: str = "google_gemini_3_flash"
     style: str = "default"
 
@@ -36,6 +35,16 @@ class ChatResponse(BaseModel):
     """对话响应"""
     reply: str
     model_used: str
+
+
+class ChatHistoryResponse(BaseModel):
+    """对话历史响应"""
+    messages: List[Dict[str, Any]]
+
+
+class ClearHistoryResponse(BaseModel):
+    """清空历史响应"""
+    deleted_count: int
 
 
 class ModelInfo(BaseModel):
@@ -70,15 +79,25 @@ async def send_chat_message(mind_id: str, request: ChatRequest):
         raise HTTPException(status_code=404, detail="Mind not found")
 
     try:
+        # 从数据库获取历史记录
+        history_records = db.get_chat_history(mind_id)
+        history = [{"role": r["role"], "content": r["content"]} for r in history_records]
+
+        # 保存用户消息到数据库
+        db.add_chat_message(mind_id, "user", request.message, request.model, request.style)
+
         # 调用对话服务
         reply = await chat_with_mind(
             mind_id=mind_id,
             mind=mind,
             message=request.message,
-            history=[msg.model_dump() for msg in request.history],
+            history=history,
             model=request.model,
             style=request.style
         )
+
+        # 保存 AI 回复到数据库
+        db.add_chat_message(mind_id, "assistant", reply, request.model, request.style)
 
         return ChatResponse(
             reply=reply,
@@ -88,6 +107,28 @@ async def send_chat_message(mind_id: str, request: ChatRequest):
     except Exception as e:
         logger.error(f"对话失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/minds/{mind_id}/chat/history", response_model=ChatHistoryResponse)
+async def get_chat_history(mind_id: str):
+    """获取对话历史"""
+    mind = db.get_mind(mind_id)
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    messages = db.get_chat_history(mind_id)
+    return ChatHistoryResponse(messages=messages)
+
+
+@router.delete("/minds/{mind_id}/chat/history", response_model=ClearHistoryResponse)
+async def clear_chat_history(mind_id: str):
+    """清空对话历史"""
+    mind = db.get_mind(mind_id)
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    deleted_count = db.clear_chat_history(mind_id)
+    return ClearHistoryResponse(deleted_count=deleted_count)
 
 
 @router.get("/chat/models", response_model=ModelsResponse)

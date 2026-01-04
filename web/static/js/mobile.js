@@ -16,7 +16,6 @@
 
 const API_BASE = '/api';
 let currentMindId = null;
-let chatHistory = [];
 
 // ==================== DOM 元素引用 ====================
 const els = {
@@ -155,7 +154,6 @@ async function loadMinds() {
  */
 async function selectMind(mindId) {
     currentMindId = mindId;
-    chatHistory = [];
 
     // 更新列表选中状态
     document.querySelectorAll('[data-logic-id="mind-list-item"]').forEach(item => {
@@ -171,7 +169,7 @@ async function selectMind(mindId) {
     // 重置 UI
     els.chatMessages.innerHTML = `
         <div data-logic-id="chat-welcome">
-            <p>思维网络已连接。</p><p>准备好进行深层链接。</p>
+            <p>正在加载对话记录...</p>
         </div>`;
     els.outputResult.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding-top:40px;">结构化输出将显示在这里</p>';
 
@@ -188,7 +186,7 @@ async function selectMind(mindId) {
             els.narrativeContent.innerHTML = '<p style="color:var(--text-muted)">点击生成以构建叙事</p>';
         }
 
-        await Promise.all([loadTimeline(), loadStructure()]);
+        await Promise.all([loadTimeline(), loadStructure(), loadChatHistory()]);
     } catch (error) {
         console.error('加载 Mind 详情失败:', error);
     }
@@ -302,10 +300,10 @@ async function loadTimeline() {
         }
 
         let html = '';
-        [...data.timeline].reverse().forEach(day => {
+        data.timeline.forEach(day => {
             html += `<div data-logic-id="timeline-day">
                 <div data-logic-id="timeline-date">${day.date}</div>`;
-            day.items.reverse().forEach(item => {
+            day.items.forEach(item => {
                 html += `<div data-logic-id="timeline-item">
                     <span data-logic-id="timeline-time">${item.time}</span>
                     <div data-logic-id="timeline-text">${escapeHtml(item.content)}</div>
@@ -397,6 +395,38 @@ async function generateOutput() {
 // ==================== Chat 对话 ====================
 
 /**
+ * 加载对话历史
+ * API: GET /api/minds/{mindId}/chat/history
+ */
+async function loadChatHistory() {
+    if (!currentMindId) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/chat/history`);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+
+        if (data.messages && data.messages.length > 0) {
+            els.chatMessages.innerHTML = '';
+            data.messages.forEach(msg => {
+                addChatMessage(msg.role, msg.content);
+            });
+        } else {
+            els.chatMessages.innerHTML = `
+                <div data-logic-id="chat-welcome">
+                    <p>思维网络已连接。</p><p>准备好进行深层链接。</p>
+                </div>`;
+        }
+    } catch (error) {
+        console.error('加载对话历史失败:', error);
+        els.chatMessages.innerHTML = `
+            <div data-logic-id="chat-welcome">
+                <p>思维网络已连接。</p><p>准备好进行深层链接。</p>
+            </div>`;
+    }
+}
+
+/**
  * 发送对话消息
  * API: POST /api/minds/{mindId}/chat
  */
@@ -417,7 +447,6 @@ async function sendChatMessage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message,
-                history: chatHistory,
                 model: els.chatModel.value,
                 style: els.chatStyle.value
             })
@@ -428,8 +457,6 @@ async function sendChatMessage() {
         if (response.ok) {
             const data = await response.json();
             addChatMessage('assistant', data.reply);
-            chatHistory.push({ role: 'user', content: message });
-            chatHistory.push({ role: 'assistant', content: data.reply });
         } else {
             addChatMessage('assistant', '连接断开');
         }
@@ -459,13 +486,27 @@ function removeChatMessage(id) {
     if (el) el.remove();
 }
 
-function clearChat() {
-    if (!confirm('清空当前对话记忆？')) return;
-    chatHistory = [];
-    els.chatMessages.innerHTML = `
-        <div data-logic-id="chat-welcome">
-            <p>记忆已重置。</p>
-        </div>`;
+async function clearChat() {
+    if (!currentMindId) return;
+    if (!confirm('确定要清空对话记录吗？此操作不可恢复。')) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/chat/history`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            els.chatMessages.innerHTML = `
+                <div data-logic-id="chat-welcome">
+                    <p>记忆已重置。</p>
+                </div>`;
+        } else {
+            alert('清空失败，请重试');
+        }
+    } catch (error) {
+        console.error('清空对话失败:', error);
+        alert('清空失败，请重试');
+    }
 }
 
 // ==================== UI 控制 ====================

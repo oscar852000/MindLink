@@ -471,26 +471,39 @@ section[id$="Tab"].active {
 }
 
 [data-logic-id="chat-message"] {
-    max-width: 85%;
-    padding: 12px 16px;
+    width: 100%;
+    padding: 16px 0;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 1.7;
     position: relative;
     word-wrap: break-word;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-logic-id="chat-message"]::before {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    opacity: 0.5;
 }
 
 [data-role="assistant"] {
-    align-self: flex-start;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 20px 20px 20px 4px;
     color: rgba(255, 255, 255, 0.9);
 }
 
+[data-role="assistant"]::before {
+    content: "AI";
+    color: var(--accent-primary);
+}
+
 [data-role="user"] {
-    align-self: flex-end;
-    background: linear-gradient(135deg, rgba(123, 97, 255, 0.4), rgba(123, 97, 255, 0.1));
-    border: 1px solid rgba(123, 97, 255, 0.3);
-    border-radius: 20px 20px 4px 20px;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+[data-role="user"]::before {
+    content: "你";
+    color: var(--text-muted);
 }
 
 [data-logic-id="chat-input-area"] {

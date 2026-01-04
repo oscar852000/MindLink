@@ -190,9 +190,9 @@ async def get_timeline_view(mind_id: str):
             "content": f["cleaned_content"]
         })
 
-    # 转换为列表，按日期倒序
+    # 转换为列表，日期倒序（新日期在前），每天内的 items 也按时间倒序（新时间在前）
     timeline = [
-        {"date": date, "items": items}
+        {"date": date, "items": sorted(items, key=lambda x: x["time"], reverse=True)}
         for date, items in sorted(grouped.items(), reverse=True)
     ]
 

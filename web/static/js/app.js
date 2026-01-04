@@ -6,7 +6,6 @@ const API_BASE = '/api';
 
 // 状态
 let currentMindId = null;
-let chatHistory = []; // 对话历史
 
 // DOM 元素
 const mindList = document.getElementById('mindList');
@@ -168,7 +167,6 @@ async function loadMinds() {
 // 选择 Mind
 async function selectMind(mindId) {
     currentMindId = mindId;
-    chatHistory = []; // 切换 Mind 时清空对话历史
 
     // 更新列表选中状态
     document.querySelectorAll('[data-mind-id]').forEach(item => {
@@ -190,11 +188,10 @@ async function selectMind(mindId) {
         appContainer.classList.remove('sidebar-open');
     }
 
-    // 重置对话区
+    // 先显示加载状态
     chatMessages.innerHTML = `
         <div data-logic-id="chat-welcome">
-            <p>我已经了解了你关于这个主题的所有想法。</p>
-            <p>有什么想和我讨论的吗？</p>
+            <p>正在加载对话记录...</p>
         </div>
     `;
 
@@ -220,10 +217,11 @@ async function selectMind(mindId) {
             narrativeContent.innerHTML = '<p style="color: var(--text-dim);">点击上方"生成叙事"按钮生成内容</p>';
         }
 
-        // 加载时间轴和结构
+        // 加载时间轴、结构和对话历史
         await Promise.all([
             loadTimeline(),
-            loadStructure()
+            loadStructure(),
+            loadChatHistory()
         ]);
     } catch (error) {
         console.error('加载失败:', error);
@@ -246,15 +244,9 @@ async function loadTimeline() {
             return;
         }
 
-        // 倒序：最新的排在最前
-        const reversedTimeline = [...data.timeline].reverse();
-        reversedTimeline.forEach(day => {
-            day.items = [...day.items].reverse();
-        });
-
         let html = '<div data-logic-id="timeline-list">';
         let isFirst = true;
-        reversedTimeline.forEach(day => {
+        data.timeline.forEach(day => {
             html += `<div data-logic-id="timeline-day">
                 <div data-logic-id="timeline-date">${day.date}</div>`;
             day.items.forEach(item => {
@@ -524,6 +516,43 @@ function switchTab(tabName) {
 
 // ========== 对话功能 ==========
 
+// 加载对话历史
+async function loadChatHistory() {
+    if (!currentMindId) return;
+
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/chat/history`);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
+
+        if (data.messages && data.messages.length > 0) {
+            // 清空欢迎语，显示历史消息
+            chatMessages.innerHTML = '';
+            data.messages.forEach(msg => {
+                addChatMessage(msg.role, msg.content);
+            });
+        } else {
+            // 没有历史，显示欢迎语
+            chatMessages.innerHTML = `
+                <div data-logic-id="chat-welcome">
+                    <p>我已经了解了你关于这个主题的所有想法。</p>
+                    <p>有什么想和我讨论的吗？</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('加载对话历史失败:', error);
+        chatMessages.innerHTML = `
+            <div data-logic-id="chat-welcome">
+                <p>我已经了解了你关于这个主题的所有想法。</p>
+                <p>有什么想和我讨论的吗？</p>
+            </div>
+        `;
+    }
+}
+
 // 发送对话消息
 async function sendChatMessage() {
     if (!currentMindId) return;
@@ -547,7 +576,6 @@ async function sendChatMessage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: message,
-                history: chatHistory,
                 model: chatModel.value,
                 style: chatStyle.value
             })
@@ -560,9 +588,6 @@ async function sendChatMessage() {
             const data = await response.json();
             // 添加 AI 回复
             addChatMessage('assistant', data.reply);
-            // 更新历史
-            chatHistory.push({ role: 'user', content: message });
-            chatHistory.push({ role: 'assistant', content: data.reply });
         } else {
             const error = await response.json();
             addChatMessage('assistant', `抱歉，出错了：${error.detail || '请稍后重试'}`);
@@ -615,18 +640,32 @@ function removeChatMessage(messageId) {
 }
 
 // 清空对话
-function clearChat() {
-    if (!confirm('确定要刷新对话吗？当前对话记录将被清空。')) {
+async function clearChat() {
+    if (!currentMindId) return;
+
+    if (!confirm('确定要清空对话记录吗？此操作不可恢复。')) {
         return;
     }
 
-    chatHistory = [];
-    chatMessages.innerHTML = `
-        <div data-logic-id="chat-welcome">
-            <p>我已经了解了你关于这个主题的所有想法。</p>
-            <p>有什么想和我讨论的吗？</p>
-        </div>
-    `;
+    try {
+        const response = await fetch(`${API_BASE}/minds/${currentMindId}/chat/history`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            chatMessages.innerHTML = `
+                <div data-logic-id="chat-welcome">
+                    <p>我已经了解了你关于这个主题的所有想法。</p>
+                    <p>有什么想和我讨论的吗？</p>
+                </div>
+            `;
+        } else {
+            alert('清空失败，请重试');
+        }
+    } catch (error) {
+        console.error('清空对话失败:', error);
+        alert('清空失败，请重试');
+    }
 }
 
 // ========== 工具函数 ==========
