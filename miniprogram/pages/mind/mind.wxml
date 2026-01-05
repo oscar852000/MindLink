@@ -1,0 +1,221 @@
+<!-- Mind 详情页 -->
+<view class="container">
+  <!-- 顶部标题栏 -->
+  <view class="header">
+    <view class="back-btn" bindtap="goBack">‹</view>
+    <text class="header-title">{{mind.title || 'Mind'}}</text>
+    <view class="header-placeholder"></view>
+  </view>
+
+  <!-- 顶部 Tab：只读视图切换 -->
+  <view class="top-tabs" wx:if="{{currentTab === 'structure' || currentTab === 'timeline' || currentTab === 'narrative'}}">
+    <view
+      class="top-tab-btn {{currentTab === 'structure' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="structure"
+    >结构</view>
+    <view
+      class="top-tab-btn {{currentTab === 'timeline' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="timeline"
+    >时间轴</view>
+    <view
+      class="top-tab-btn {{currentTab === 'narrative' ? 'active' : ''}}"
+      bindtap="switchTab"
+      data-tab="narrative"
+    >叙事</view>
+  </view>
+
+  <!-- 主内容区 -->
+  <scroll-view
+    class="main-content"
+    scroll-y
+    enhanced
+    show-scrollbar="{{false}}"
+    scroll-into-view="{{scrollToView}}"
+    scroll-with-animation
+  >
+    <!-- 投喂 Tab -->
+    <view class="tab-pane" wx:if="{{currentTab === 'feed'}}">
+      <textarea
+        class="feed-input"
+        style="color: #fff;"
+        placeholder="输入零散的想法、灵感或事实..."
+        placeholder-class="placeholder"
+        value="{{feedContent}}"
+        bindinput="onFeedInput"
+        maxlength="-1"
+        auto-height
+      />
+      <view class="btn-primary feed-btn" bindtap="submitFeed">
+        注入晶体 (Feed)
+      </view>
+      <text class="feed-status" wx:if="{{feedStatus}}">{{feedStatus}}</text>
+    </view>
+
+    <!-- 对话 Tab -->
+    <view class="tab-pane chat-pane" wx:if="{{currentTab === 'chat'}}">
+      <view class="chat-controls">
+        <picker
+          mode="selector"
+          range="{{models}}"
+          range-key="name"
+          value="{{modelIndex}}"
+          bindchange="onModelChange"
+        >
+          <view class="picker-btn">{{models[modelIndex].name}} ▾</view>
+        </picker>
+        <view class="clear-btn" bindtap="clearChat">清空</view>
+      </view>
+
+      <view class="chat-messages">
+        <view class="chat-welcome" wx:if="{{chatMessages.length === 0 && !chatLoading}}">
+          <text class="welcome-text">思维网络已连接</text>
+          <text class="welcome-hint">准备好进行深层链接</text>
+        </view>
+
+        <view
+          class="chat-msg {{item.role}}"
+          wx:for="{{chatMessages}}"
+          wx:key="index"
+          id="msg-{{index}}"
+        >
+          <text class="msg-label" wx:if="{{item.role === 'assistant'}}">AI</text>
+          <text class="msg-content" user-select>{{item.content}}</text>
+        </view>
+
+        <view class="chat-msg assistant" wx:if="{{chatLoading}}" id="msg-loading">
+          <text class="msg-label">AI</text>
+          <text class="msg-content loading-pulse">思考中...</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 结构 Tab -->
+    <view class="tab-pane" wx:if="{{currentTab === 'structure'}}">
+      <view class="section-header">
+        <text class="section-label">CRYSTALLINE STRUCTURE</text>
+      </view>
+      <view class="content-area">
+        <rich-text nodes="{{structureHtml}}" wx:if="{{structureHtml}}"></rich-text>
+        <text class="empty-hint" wx:else>等待生成结构...</text>
+      </view>
+    </view>
+
+    <!-- 时间轴 Tab -->
+    <view class="tab-pane" wx:if="{{currentTab === 'timeline'}}">
+      <view class="section-header">
+        <text class="section-label">TIMELINE TRACE</text>
+      </view>
+      <view class="timeline-list">
+        <block wx:for="{{timeline}}" wx:key="date">
+          <view class="timeline-day">
+            <text class="timeline-date">{{item.date}}</text>
+            <view
+              class="timeline-item"
+              wx:for="{{item.items}}"
+              wx:for-item="record"
+              wx:key="id"
+              bindlongpress="showEditMenu"
+              data-id="{{record.id}}"
+              data-content="{{record.content}}"
+            >
+              <view class="timeline-item-header">
+                <text class="timeline-time">{{record.time}}</text>
+              </view>
+              <text class="timeline-text" user-select>{{record.content}}</text>
+            </view>
+          </view>
+        </block>
+        <text class="empty-hint" wx:if="{{timeline.length === 0}}">暂无记录</text>
+      </view>
+    </view>
+
+    <!-- 叙事 Tab -->
+    <view class="tab-pane" wx:if="{{currentTab === 'narrative'}}">
+      <view class="section-header">
+        <text class="section-label">NARRATIVE VIEW</text>
+        <view class="section-action" bindtap="generateNarrative">重新生成</view>
+      </view>
+      <view class="content-area">
+        <rich-text nodes="{{narrativeHtml}}" wx:if="{{narrativeHtml}}"></rich-text>
+        <text class="empty-hint" wx:else>等待生成叙事...</text>
+      </view>
+    </view>
+
+    <!-- 输出 Tab -->
+    <view class="tab-pane" wx:if="{{currentTab === 'output'}}">
+      <view class="output-input-area">
+        <input
+          class="output-instruction"
+          style="color: #fff;"
+          placeholder="输入输出指令 (例如: 简报、邮件...)"
+          placeholder-class="placeholder"
+          value="{{outputInstruction}}"
+          bindinput="onOutputInput"
+          bindconfirm="generateOutput"
+        />
+        <view class="output-btn" bindtap="generateOutput">生成</view>
+      </view>
+      <view class="output-result">
+        <rich-text nodes="{{outputHtml}}" wx:if="{{outputHtml}}"></rich-text>
+        <text class="empty-hint" wx:else>结构化输出将显示在这里</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 对话输入区 (仅对话 Tab 显示) -->
+  <view class="chat-input-area" wx:if="{{currentTab === 'chat'}}">
+    <textarea
+      class="chat-input"
+      style="color: #fff;"
+      placeholder="发送消息..."
+      placeholder-class="placeholder"
+      value="{{chatInput}}"
+      bindinput="onChatInput"
+      bindconfirm="sendChat"
+      auto-height
+      maxlength="-1"
+    />
+    <view class="send-btn {{chatInput ? 'active' : ''}}" bindtap="sendChat">↑</view>
+  </view>
+
+  <!-- 底部导航 -->
+  <view class="bottom-nav">
+    <view class="nav-btn {{currentTab === 'feed' ? 'active' : ''}}" bindtap="switchTab" data-tab="feed">
+      <text class="nav-icon">✎</text>
+      <text class="nav-label">投喂</text>
+    </view>
+    <view class="nav-btn {{currentTab === 'chat' ? 'active' : ''}}" bindtap="switchTab" data-tab="chat">
+      <text class="nav-icon">💬</text>
+      <text class="nav-label">对话</text>
+    </view>
+    <view class="nav-btn {{currentTab === 'structure' || currentTab === 'timeline' || currentTab === 'narrative' ? 'active' : ''}}" bindtap="switchTab" data-tab="structure">
+      <text class="nav-icon">◇</text>
+      <text class="nav-label">晶体</text>
+    </view>
+    <view class="nav-btn {{currentTab === 'output' ? 'active' : ''}}" bindtap="switchTab" data-tab="output">
+      <text class="nav-icon">↗</text>
+      <text class="nav-label">输出</text>
+    </view>
+  </view>
+</view>
+
+<!-- 编辑弹窗 -->
+<view class="modal-mask" wx:if="{{showEditModal}}" bindtap="hideEditModal">
+  <view class="modal-content" catchtap="stopPropagation">
+    <text class="modal-title">编辑记录</text>
+    <textarea
+      class="modal-textarea"
+      style="color: #fff;"
+      value="{{editContent}}"
+      bindinput="onEditInput"
+      maxlength="-1"
+    />
+    <view class="modal-actions">
+      <view class="modal-btn delete" bindtap="deleteFeed">删除</view>
+      <view class="modal-btn cancel" bindtap="hideEditModal">取消</view>
+      <view class="modal-btn confirm" bindtap="saveFeed">保存</view>
+    </view>
+  </view>
+</view>

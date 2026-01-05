@@ -1,0 +1,426 @@
+/* Mind 详情页样式 */
+
+/* 容器 */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 顶部标题栏 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  padding-top: calc(24rpx + env(safe-area-inset-top));
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 2rpx solid var(--border-subtle);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 56rpx;
+  font-weight: 300;
+  color: var(--text-main);
+}
+
+.back-btn:active {
+  opacity: 0.6;
+}
+
+.header-title {
+  flex: 1;
+  text-align: center;
+  font-size: 34rpx;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 20rpx;
+}
+
+.header-placeholder {
+  width: 64rpx;
+}
+
+/* 顶部 Tab（只读视图切换） */
+.top-tabs {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 32rpx;
+  gap: 16rpx;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.top-tab-btn {
+  padding: 12rpx 32rpx;
+  font-size: 26rpx;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 40rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.2s;
+}
+
+.top-tab-btn.active {
+  background: rgba(123, 97, 255, 0.15);
+  color: #C4B5FD;
+  border-color: rgba(123, 97, 255, 0.3);
+}
+
+/* 主内容区 */
+.main-content {
+  flex: 1;
+  overflow-x: hidden;
+}
+
+.tab-pane {
+  padding: 32rpx;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+/* ====== 投喂 Tab ====== */
+.feed-input {
+  width: 100%;
+  min-height: 300rpx;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-size: 34rpx;
+  line-height: 1.7;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.feed-btn {
+  margin-top: 40rpx;
+}
+
+.feed-status {
+  display: block;
+  text-align: center;
+  margin-top: 20rpx;
+  font-size: 26rpx;
+  color: var(--text-muted);
+}
+
+/* ====== 对话 Tab ====== */
+.chat-pane {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-controls {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 20rpx 32rpx;
+  border-bottom: 2rpx solid var(--border-subtle);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.picker-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2rpx solid var(--border-subtle);
+  padding: 12rpx 24rpx;
+  border-radius: 16rpx;
+  font-size: 24rpx;
+  color: var(--text-main);
+}
+
+.clear-btn {
+  margin-left: auto;
+  font-size: 24rpx;
+  color: var(--text-muted);
+  padding: 12rpx 24rpx;
+}
+
+.chat-messages {
+  padding: 32rpx;
+}
+
+.chat-welcome {
+  text-align: center;
+  padding: 80rpx 0;
+}
+
+.welcome-text {
+  display: block;
+  font-size: 30rpx;
+  color: var(--text-muted);
+  margin-bottom: 12rpx;
+}
+
+.welcome-hint {
+  display: block;
+  font-size: 26rpx;
+  color: var(--text-faint);
+}
+
+.chat-msg {
+  margin-bottom: 32rpx;
+  word-wrap: break-word;
+}
+
+.chat-msg.user {
+  max-width: 85%;
+  margin-left: auto;
+  background: linear-gradient(135deg, rgba(123, 97, 255, 0.3), rgba(123, 97, 255, 0.1));
+  border: 2rpx solid rgba(123, 97, 255, 0.2);
+  border-radius: 32rpx 32rpx 8rpx 32rpx;
+  padding: 24rpx 32rpx;
+}
+
+.chat-msg.assistant {
+  padding: 24rpx 0;
+  border-bottom: 2rpx solid rgba(255, 255, 255, 0.06);
+}
+
+.msg-label {
+  display: block;
+  font-size: 24rpx;
+  font-weight: 500;
+  color: var(--accent-primary);
+  margin-bottom: 12rpx;
+  opacity: 0.7;
+}
+
+.msg-content {
+  font-size: 30rpx;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.chat-msg.user .msg-content {
+  color: #fff;
+}
+
+/* 对话输入区 */
+.chat-input-area {
+  display: flex;
+  align-items: flex-end;
+  gap: 16rpx;
+  padding: 24rpx 32rpx;
+  background: var(--bg-deep);
+  border-top: 2rpx solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.chat-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2rpx solid transparent;
+  border-radius: 40rpx;
+  padding: 24rpx 32rpx;
+  color: #fff;
+  font-size: 30rpx;
+  max-height: 240rpx;
+  min-height: 48rpx;
+  transition: border 0.2s;
+}
+
+.chat-input:focus {
+  border-color: var(--accent-secondary);
+}
+
+.send-btn {
+  width: 88rpx;
+  height: 88rpx;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-faint);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.send-btn.active {
+  background: var(--accent-primary);
+  color: #000;
+}
+
+/* ====== 结构/叙事 Tab ====== */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.section-label {
+  font-size: 22rpx;
+  color: var(--text-faint);
+  letter-spacing: 2rpx;
+}
+
+.section-action {
+  font-size: 24rpx;
+  color: var(--accent-primary);
+  padding: 8rpx 16rpx;
+}
+
+.content-area {
+  font-size: 30rpx;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.empty-hint {
+  color: var(--text-muted);
+  text-align: center;
+  display: block;
+  padding: 60rpx 0;
+  font-size: 28rpx;
+}
+
+/* ====== 时间轴 Tab ====== */
+.timeline-list {
+  padding-left: 32rpx;
+}
+
+.timeline-day {
+  margin-bottom: 40rpx;
+  padding-left: 32rpx;
+  border-left: 4rpx solid rgba(255, 255, 255, 0.1);
+  position: relative;
+}
+
+.timeline-day::before {
+  content: '';
+  position: absolute;
+  left: -10rpx;
+  top: 0;
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--accent-primary);
+  box-shadow: 0 0 20rpx var(--accent-primary);
+}
+
+.timeline-date {
+  display: block;
+  font-size: 26rpx;
+  color: var(--accent-primary);
+  font-weight: 600;
+  margin-bottom: 20rpx;
+  letter-spacing: 1rpx;
+}
+
+.timeline-item {
+  margin-bottom: 24rpx;
+  padding: 24rpx;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 20rpx;
+  border: 2rpx solid var(--border-subtle);
+}
+
+.timeline-item-header {
+  margin-bottom: 8rpx;
+}
+
+.timeline-time {
+  font-size: 22rpx;
+  color: var(--text-faint);
+}
+
+.timeline-text {
+  font-size: 28rpx;
+  color: var(--text-main);
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+/* ====== 输出 Tab ====== */
+.output-input-area {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 32rpx;
+}
+
+.output-instruction {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2rpx solid var(--border-subtle);
+  padding: 24rpx 28rpx;
+  border-radius: 20rpx;
+  color: #fff;
+  font-size: 30rpx;
+}
+
+.output-btn {
+  background: var(--text-main);
+  color: #000;
+  padding: 0 40rpx;
+  border-radius: 20rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+.output-btn:active {
+  opacity: 0.8;
+}
+
+.output-result {
+  padding: 32rpx;
+  background: var(--bg-glass);
+  border: 2rpx solid var(--border-subtle);
+  border-radius: 24rpx;
+  min-height: 300rpx;
+}
+
+/* ====== 底部导航 ====== */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 16rpx 0;
+  padding-bottom: calc(16rpx + env(safe-area-inset-bottom));
+  background: rgba(10, 10, 15, 0.95);
+  backdrop-filter: blur(20px);
+  border-top: 2rpx solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6rpx;
+  padding: 12rpx 24rpx;
+  opacity: 0.5;
+  transition: all 0.2s;
+}
+
+.nav-btn.active {
+  opacity: 1;
+}
+
+.nav-icon {
+  font-size: 40rpx;
+}
+
+.nav-btn.active .nav-icon {
+  color: var(--accent-primary);
+}
+
+.nav-label {
+  font-size: 20rpx;
+  font-weight: 500;
+}

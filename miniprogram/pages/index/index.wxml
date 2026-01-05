@@ -1,0 +1,63 @@
+<!-- 首页：Mind 列表 -->
+<view class="container">
+  <!-- 顶部标题栏 -->
+  <view class="header">
+    <text class="header-title">MindLink</text>
+    <view class="header-btn" bindtap="showCreateModal">+</view>
+  </view>
+
+  <!-- Mind 列表 -->
+  <scroll-view class="mind-list" scroll-y enhanced show-scrollbar="{{false}}">
+    <!-- 列表区域 -->
+    <block wx:if="{{minds.length > 0}}">
+      <view
+        class="mind-item"
+        wx:for="{{minds}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="goToMind"
+        bindlongpress="showDeleteConfirm"
+      >
+        <view class="mind-content">
+          <text class="mind-title">{{item.title}}</text>
+          <text class="mind-summary" wx:if="{{item.summary}}">{{item.summary}}</text>
+          <text class="mind-date">{{item.updated_at}}</text>
+        </view>
+        <text class="mind-arrow">›</text>
+      </view>
+    </block>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{minds.length === 0 && !loading}}">
+      <view class="empty-icon"></view>
+      <text class="empty-title">暂无思维晶体</text>
+      <text class="empty-hint">点击右上角 + 创建第一个</text>
+    </view>
+
+    <!-- 加载中 -->
+    <view class="loading-state" wx:if="{{loading}}">
+      <text class="loading-text loading-pulse">加载中...</text>
+    </view>
+  </scroll-view>
+</view>
+
+<!-- 创建弹窗 -->
+<view class="modal-mask" wx:if="{{showModal}}" bindtap="hideCreateModal">
+  <view class="modal-content" catchtap="stopPropagation">
+    <text class="modal-title">新建思维晶体</text>
+    <text class="modal-hint">为这个思考方向命名</text>
+    <input
+      class="modal-input"
+      style="color: #fff;"
+      placeholder="例如：产品哲学、生活琐事..."
+      placeholder-class="placeholder"
+      value="{{newTitle}}"
+      bindinput="onTitleInput"
+      focus="{{showModal}}"
+    />
+    <view class="modal-actions">
+      <view class="modal-btn cancel" bindtap="hideCreateModal">取消</view>
+      <view class="modal-btn confirm" bindtap="createMind">创建</view>
+    </view>
+  </view>
+</view>

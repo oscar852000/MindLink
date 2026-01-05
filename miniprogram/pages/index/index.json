@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "MindLink",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "navigationStyle": "custom"
+}
