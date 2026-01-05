@@ -3,11 +3,24 @@
   <!-- 顶部标题栏 -->
   <view class="header">
     <text class="header-title">MindLink</text>
-    <view class="header-btn" bindtap="showCreateModal">+</view>
+    <view class="header-btn" bindtap="showCreateModal" wx:if="{{isLoggedIn}}">+</view>
   </view>
 
-  <!-- Mind 列表 -->
-  <scroll-view class="mind-list" scroll-y enhanced show-scrollbar="{{false}}">
+  <!-- 未登录状态 -->
+  <view class="login-prompt" wx:if="{{!isLoggedIn && !loading}}">
+    <view class="login-icon">🔐</view>
+    <text class="login-title">请先绑定账号</text>
+    <text class="login-hint">使用 MindLink 账号登录后即可使用</text>
+    <view class="login-btn" bindtap="goToLogin">绑定账号</view>
+  </view>
+
+  <!-- 已登录：Mind 列表 -->
+  <scroll-view class="mind-list" scroll-y enhanced show-scrollbar="{{false}}" wx:if="{{isLoggedIn}}">
+    <!-- 用户信息 -->
+    <view class="user-bar" wx:if="{{userInfo}}">
+      <text class="user-name">👤 {{userInfo.username}}</text>
+    </view>
+
     <!-- 列表区域 -->
     <block wx:if="{{minds.length > 0}}">
       <view
@@ -39,6 +52,11 @@
       <text class="loading-text loading-pulse">加载中...</text>
     </view>
   </scroll-view>
+
+  <!-- 未登录加载中 -->
+  <view class="loading-state" wx:if="{{!isLoggedIn && loading}}">
+    <text class="loading-text loading-pulse">检查登录状态...</text>
+  </view>
 </view>
 
 <!-- 创建弹窗 -->

@@ -145,6 +145,15 @@ class Database:
                 )
             """)
 
+            # 微信用户绑定表
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS wx_bindings (
+                    openid TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """)
+
             # 检查并添加 minds.summary 字段（兼容旧数据库）
             cursor.execute("PRAGMA table_info(minds)")
             columns = [col[1] for col in cursor.fetchall()]
@@ -623,6 +632,60 @@ class Database:
             cursor.execute("DELETE FROM chat_messages WHERE mind_id = ?", (mind_id,))
             conn.commit()
             return cursor.rowcount
+
+    # ========== 微信绑定操作 ==========
+
+    def get_wx_binding(self, openid: str) -> Optional[Dict[str, Any]]:
+        """根据 openid 获取绑定信息"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM wx_bindings WHERE openid = ?", (openid,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return {
+                "openid": row["openid"],
+                "user_id": row["user_id"],
+                "created_at": row["created_at"]
+            }
+
+    def get_wx_binding_by_user(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """根据 user_id 获取绑定信息"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM wx_bindings WHERE user_id = ?", (user_id,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return {
+                "openid": row["openid"],
+                "user_id": row["user_id"],
+                "created_at": row["created_at"]
+            }
+
+    def create_wx_binding(self, openid: str, user_id: int) -> Dict[str, Any]:
+        """创建微信绑定"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO wx_bindings (openid, user_id, created_at)
+                VALUES (?, ?, ?)
+            """, (openid, user_id, now))
+            conn.commit()
+        return {
+            "openid": openid,
+            "user_id": user_id,
+            "created_at": now
+        }
+
+    def delete_wx_binding(self, openid: str) -> bool:
+        """删除微信绑定"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM wx_bindings WHERE openid = ?", (openid,))
+            conn.commit()
+            return cursor.rowcount > 0
 
 
 # 全局数据库实例

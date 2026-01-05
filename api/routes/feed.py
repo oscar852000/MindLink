@@ -14,7 +14,7 @@ from api.services.ai_service import (
     generate_output,
     generate_narrative_with_meta
 )
-from api.auth import get_current_user
+from api.auth import get_current_user_flexible
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,7 @@ async def _process_feed(mind_id: str, feed_id: str, content: str):
 
 @router.post("/minds/{mind_id}/feed", response_model=FeedResponse)
 async def add_feed(mind_id: str, request: FeedRequest, background_tasks: BackgroundTasks,
-                   user: Dict[str, Any] = Depends(get_current_user)):
+                   user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """向 Mind 投喂想法"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
@@ -106,7 +106,7 @@ async def add_feed(mind_id: str, request: FeedRequest, background_tasks: Backgro
 
 
 @router.get("/minds/{mind_id}/feeds", response_model=FeedListResponse)
-async def get_feeds(mind_id: str, limit: int = 20, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_feeds(mind_id: str, limit: int = 20, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取 Mind 的投喂列表"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
@@ -132,7 +132,7 @@ class UpdateFeedRequest(BaseModel):
 
 @router.put("/feeds/{feed_id}")
 async def update_feed(feed_id: str, request: UpdateFeedRequest,
-                      user: Dict[str, Any] = Depends(get_current_user)):
+                      user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """更新投喂内容（直接更新 cleaned_content）"""
     # 注：此处简化处理，实际应验证 feed 归属
     result = db.update_feed_content(feed_id, request.content)
@@ -142,7 +142,7 @@ async def update_feed(feed_id: str, request: UpdateFeedRequest,
 
 
 @router.delete("/feeds/{feed_id}")
-async def delete_feed(feed_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def delete_feed(feed_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """删除投喂"""
     # 注：此处简化处理，实际应验证 feed 归属
     result = db.delete_feed(feed_id)
@@ -153,7 +153,7 @@ async def delete_feed(feed_id: str, user: Dict[str, Any] = Depends(get_current_u
 
 @router.post("/minds/{mind_id}/output", response_model=OutputResponse)
 async def generate_mind_output(mind_id: str, request: OutputRequest,
-                               user: Dict[str, Any] = Depends(get_current_user)):
+                               user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """根据指令生成输出（基于去噪内容）"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
@@ -200,7 +200,7 @@ class TimelineViewResponse(BaseModel):
 
 
 @router.get("/minds/{mind_id}/timeline-view")
-async def get_timeline_view(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_timeline_view(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取时间轴视图（按日期分组的去噪记录）"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
@@ -241,7 +241,7 @@ class NarrativeResponse(BaseModel):
 
 
 @router.post("/minds/{mind_id}/narrative")
-async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """生成叙事视图（点击触发），同时更新概述和标签"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:

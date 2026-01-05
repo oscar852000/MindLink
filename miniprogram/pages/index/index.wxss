@@ -161,3 +161,58 @@
   color: var(--text-muted);
   font-size: 28rpx;
 }
+
+/* 登录提示 */
+.login-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120rpx 40rpx;
+  text-align: center;
+}
+
+.login-icon {
+  font-size: 120rpx;
+  margin-bottom: 40rpx;
+}
+
+.login-title {
+  display: block;
+  font-size: 36rpx;
+  font-weight: 500;
+  margin-bottom: 16rpx;
+  color: var(--text-main);
+}
+
+.login-hint {
+  font-size: 26rpx;
+  color: var(--text-muted);
+  margin-bottom: 48rpx;
+}
+
+.login-btn {
+  padding: 24rpx 80rpx;
+  background: var(--accent-primary);
+  color: #000;
+  font-size: 30rpx;
+  font-weight: 500;
+  border-radius: 48rpx;
+}
+
+.login-btn:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+/* 用户信息栏 */
+.user-bar {
+  padding: 16rpx 0;
+  margin-bottom: 16rpx;
+  border-bottom: 2rpx solid var(--border-subtle);
+}
+
+.user-name {
+  font-size: 26rpx;
+  color: var(--text-muted);
+}

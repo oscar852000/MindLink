@@ -10,7 +10,7 @@ page {
   --bg-glass: rgba(255, 255, 255, 0.03);
   --bg-glass-heavy: rgba(10, 10, 15, 0.85);
 
-  --accent-primary: #00E5FF;
+  --accent-primary: #00F5FF;
   --accent-secondary: #7B61FF;
   --accent-error: #FF4444;
 

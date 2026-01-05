@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">✧</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <rect x="0" y="0" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="9" y="0" width="6" height="6" rx="1" fill="rgba(255,255,255,0.2)"/>
+  <rect x="18" y="0" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="0" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.2)"/>
+  <rect x="9" y="9" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="18" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.2)"/>
+  <rect x="0" y="18" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="9" y="18" width="6" height="6" rx="1" fill="rgba(255,255,255,0.2)"/>
+  <rect x="18" y="18" width="6" height="6" rx="1" fill="#00F5FF"/>
+</svg>

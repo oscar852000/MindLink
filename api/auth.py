@@ -8,7 +8,7 @@ import jwt
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Optional, Dict, Any
-from fastapi import HTTPException, Cookie, status
+from fastapi import HTTPException, Cookie, Header, status
 
 # 共享AIIMAGE用户数据库（只读）
 SHARED_USER_DB = "/root/AIIMAGE/data/users.db"
@@ -136,6 +136,61 @@ def get_current_user_optional(session_token: Optional[str] = Cookie(None)) -> Op
         return None
     auth = get_auth_manager()
     return auth.verify_token(session_token)
+
+
+def get_current_user_flexible(
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None)
+) -> Dict[str, Any]:
+    """
+    灵活的用户验证（支持 Cookie 或 Authorization Header）
+    用于同时支持 Web 和小程序
+    """
+    token = None
+
+    # 优先使用 Authorization Header（小程序）
+    if authorization:
+        token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    # 其次使用 Cookie（Web）
+    elif session_token:
+        token = session_token
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="未登录，请先登录"
+        )
+
+    auth = get_auth_manager()
+    user = auth.verify_token(token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="登录已过期，请重新登录"
+        )
+
+    return user
+
+
+def get_current_user_flexible_optional(
+    session_token: Optional[str] = Cookie(None),
+    authorization: Optional[str] = Header(None)
+) -> Optional[Dict[str, Any]]:
+    """
+    可选的灵活用户验证（支持 Cookie 或 Authorization Header）
+    """
+    token = None
+
+    if authorization:
+        token = authorization.replace("Bearer ", "") if authorization.startswith("Bearer ") else authorization
+    elif session_token:
+        token = session_token
+
+    if not token:
+        return None
+
+    auth = get_auth_manager()
+    return auth.verify_token(token)
 
 
 # ===== 管理员权限 =====

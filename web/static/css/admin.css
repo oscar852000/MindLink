@@ -26,9 +26,33 @@ body {
     margin-bottom: 30px;
 }
 
-.admin-header h1 {
+/* Brand Logo 组件 */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-logo .logo-mark {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.brand-logo .logo-text {
     font-size: 24px;
+    font-weight: 800;
     color: #333;
+    letter-spacing: -0.5px;
+}
+
+.admin-badge {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    padding-left: 12px;
+    border-left: 1px solid #e0e0e0;
+    margin-left: 4px;
 }
 
 .back-link {

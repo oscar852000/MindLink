@@ -1,0 +1,59 @@
+<!-- 登录绑定页面 -->
+<view class="container">
+  <view class="login-card">
+    <!-- Logo -->
+    <view class="logo-section">
+      <view class="logo-icon">🧠</view>
+      <text class="logo-title">MindLink</text>
+      <text class="logo-subtitle">绑定您的 MindLink 账号</text>
+    </view>
+
+    <!-- 错误提示 -->
+    <view class="error-box" wx:if="{{error}}">
+      <text class="error-text">{{error}}</text>
+    </view>
+
+    <!-- 表单 -->
+    <view class="form-section">
+      <view class="input-group">
+        <text class="input-label">用户名</text>
+        <input
+          class="input-field"
+          placeholder="请输入用户名"
+          placeholder-class="placeholder"
+          value="{{username}}"
+          bindinput="onUsernameInput"
+          disabled="{{loading}}"
+        />
+      </view>
+
+      <view class="input-group">
+        <text class="input-label">密码</text>
+        <input
+          class="input-field"
+          type="password"
+          placeholder="请输入密码"
+          placeholder-class="placeholder"
+          value="{{password}}"
+          bindinput="onPasswordInput"
+          disabled="{{loading}}"
+        />
+      </view>
+
+      <view class="btn-primary {{loading ? 'disabled' : ''}}" bindtap="bindAccount">
+        <text wx:if="{{!loading}}">绑定账号</text>
+        <text wx:else>绑定中...</text>
+      </view>
+    </view>
+
+    <!-- 提示 -->
+    <view class="hint-section">
+      <text class="hint-text">绑定后，您可以通过微信自动登录</text>
+    </view>
+  </view>
+
+  <!-- 返回按钮 -->
+  <view class="back-link" bindtap="goBack">
+    <text>返回</text>
+  </view>
+</view>

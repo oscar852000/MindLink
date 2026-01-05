@@ -5,6 +5,10 @@ import os
 
 # ========== AI Hub 配置 ==========
 AI_HUB_URL = os.getenv("AI_HUB_URL", "http://localhost:8000")
+
+# ========== 微信小程序配置 ==========
+WX_APPID = os.getenv("WX_APPID", "wx2d43422415590d2c")
+WX_APPSECRET = os.getenv("WX_APPSECRET", "84e7839f85195486e90c1fe416bab35f")
 DEFAULT_MODEL = "google_gemini_3_flash"
 
 # ========== 可用模型列表 ==========

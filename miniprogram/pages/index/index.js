@@ -1,25 +1,81 @@
-const api = require('../../utils/api')
+const { api, auth } = require('../../utils/api')
+const app = getApp()
 
 Page({
   data: {
     minds: [],
     loading: true,
     showModal: false,
-    newTitle: ''
+    newTitle: '',
+    isLoggedIn: false,
+    userInfo: null
   },
 
   onLoad() {
-    this.loadMinds()
+    this.checkLoginAndLoad()
   },
 
   onShow() {
-    // 每次显示页面时刷新列表
-    this.loadMinds()
+    // 每次显示页面时检查登录状态并刷新
+    this.checkLoginAndLoad()
   },
 
   onPullDownRefresh() {
-    this.loadMinds().then(() => {
+    this.checkLoginAndLoad().then(() => {
       wx.stopPullDownRefresh()
+    })
+  },
+
+  async checkLoginAndLoad() {
+    // 检查是否已登录
+    if (!app.isLoggedIn()) {
+      // 尝试自动登录
+      await this.tryAutoLogin()
+    }
+
+    if (app.isLoggedIn()) {
+      this.setData({
+        isLoggedIn: true,
+        userInfo: app.globalData.userInfo
+      })
+      this.loadMinds()
+    } else {
+      this.setData({
+        isLoggedIn: false,
+        loading: false
+      })
+    }
+  },
+
+  async tryAutoLogin() {
+    try {
+      // 获取微信登录 code
+      const { code } = await new Promise((resolve, reject) => {
+        wx.login({
+          success: resolve,
+          fail: reject
+        })
+      })
+
+      // 尝试自动登录
+      const res = await auth.wxLogin(code)
+
+      if (res.success && res.token) {
+        // 已绑定，保存登录状态
+        app.setLoginState(res.token, res.user)
+        return true
+      }
+      // 未绑定，需要手动绑定
+      return false
+    } catch (err) {
+      console.log('自动登录失败:', err)
+      return false
+    }
+  },
+
+  goToLogin() {
+    wx.navigateTo({
+      url: '/pages/login/login'
     })
   },
 
@@ -33,8 +89,12 @@ Page({
       })
     } catch (err) {
       console.error('加载失败:', err)
-      wx.showToast({ title: '加载失败', icon: 'none' })
-      this.setData({ loading: false })
+      if (err.code === 401) {
+        this.setData({ isLoggedIn: false, loading: false })
+      } else {
+        wx.showToast({ title: '加载失败', icon: 'none' })
+        this.setData({ loading: false })
+      }
     }
   },
 

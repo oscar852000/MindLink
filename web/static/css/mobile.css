@@ -8,8 +8,8 @@
     --bg-glass: rgba(255, 255, 255, 0.03);
     --bg-glass-heavy: rgba(10, 10, 15, 0.85);
 
-    --accent-primary: #00E5FF;
-    /* 神经脉冲蓝 */
+    --accent-primary: #00F5FF;
+    /* 晶体青 - 统一品牌色 */
     --accent-secondary: #7B61FF;
     /* 深度思维紫 */
     --accent-error: #FF4444;
@@ -106,6 +106,33 @@ button {
         opacity: 0.4;
     }
 }
+
+/* ========== Brand Logo 组件 ========== */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-logo .logo-mark {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.brand-logo .logo-text {
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+/* Logo 尺寸变体 */
+.brand-logo--sm .logo-mark { width: 20px; height: 20px; }
+.brand-logo--sm .logo-text { font-size: 15px; }
+
+.brand-logo--lg .logo-mark { width: 48px; height: 48px; }
+.brand-logo--lg .logo-text { font-size: 28px; }
 
 /* ====== HEADER ====== */
 header[data-logic-id="top-bar"] {

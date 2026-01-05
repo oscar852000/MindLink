@@ -1,11 +1,15 @@
 :root {
+    /* Brand Colors - 统一品牌色 */
+    --brand-crystal: #00F5FF;
+    --brand-neutral: #94A3B8;
+
     --bg-deep: #05070a;
     --bg-surface: #0f1218;
     --bg-card: rgba(22, 27, 34, 0.6);
-    --primary: #22d3ee;
-    --primary-glow: rgba(34, 211, 238, 0.15);
+    --primary: var(--brand-crystal);
+    --primary-glow: rgba(0, 245, 255, 0.15);
     --text-main: #e2e8f0;
-    --text-dim: #94a3b8;
+    --text-dim: var(--brand-neutral);
     --border: rgba(255, 255, 255, 0.08);
     --accent-green: #10b981;
     --accent-purple: #8b5cf6;
@@ -73,15 +77,32 @@ body {
     letter-spacing: -0.5px;
 }
 
-/* 自定义 Logo 形状 */
-[data-logic-id="sidebar-header"] h1::before {
-    content: "";
+/* ========== Brand Logo 组件 ========== */
+.brand-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.brand-logo .logo-mark {
     width: 28px;
     height: 28px;
-    background: linear-gradient(135deg, var(--primary), var(--accent-green));
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'%3E%3C/path%3E%3Cpath d='M2 17l10 5 10-5'%3E%3C/path%3E%3Cpath d='M2 12l10 5 10-5'%3E%3C/path%3E%3C/svg%3E") no-repeat center;
-    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2L2 7l10 5 10-5-10-5z'%3E%3C/path%3E%3Cpath d='M2 17l10 5 10-5'%3E%3C/path%3E%3Cpath d='M2 12l10 5 10-5'%3E%3C/path%3E%3C/svg%3E") no-repeat center;
+    flex-shrink: 0;
 }
+
+.brand-logo .logo-text {
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+
+/* Logo 尺寸变体 */
+.brand-logo--sm .logo-mark { width: 20px; height: 20px; }
+.brand-logo--sm .logo-text { font-size: 18px; }
+
+.brand-logo--lg .logo-mark { width: 48px; height: 48px; }
+.brand-logo--lg .logo-text { font-size: 32px; }
 
 [data-logic-id="sidebar-header"] p {
     font-size: 12px;

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <!-- Row 1: positions 0, 1, 2 -->
+  <rect x="0" y="0" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="9" y="0" width="6" height="6" rx="1" fill="rgba(255,255,255,0.15)"/>
+  <rect x="18" y="0" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <!-- Row 2: positions 3, 4, 5 -->
+  <rect x="0" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.15)"/>
+  <rect x="9" y="9" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="18" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.15)"/>
+  <!-- Row 3: positions 6, 7, 8 -->
+  <rect x="0" y="18" width="6" height="6" rx="1" fill="#00F5FF"/>
+  <rect x="9" y="18" width="6" height="6" rx="1" fill="rgba(255,255,255,0.15)"/>
+  <rect x="18" y="18" width="6" height="6" rx="1" fill="#00F5FF"/>
+</svg>

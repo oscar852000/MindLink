@@ -12,7 +12,7 @@ from api.services.chat_service import (
     get_available_models,
     get_available_styles
 )
-from api.auth import get_current_user
+from api.auth import get_current_user_flexible
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class StylesResponse(BaseModel):
 
 @router.post("/minds/{mind_id}/chat", response_model=ChatResponse)
 async def send_chat_message(mind_id: str, request: ChatRequest,
-                            user: Dict[str, Any] = Depends(get_current_user)):
+                            user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """发送对话消息"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
@@ -112,7 +112,7 @@ async def send_chat_message(mind_id: str, request: ChatRequest,
 
 
 @router.get("/minds/{mind_id}/chat/history", response_model=ChatHistoryResponse)
-async def get_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取对话历史"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
@@ -123,7 +123,7 @@ async def get_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_curr
 
 
 @router.delete("/minds/{mind_id}/chat/history", response_model=ClearHistoryResponse)
-async def clear_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def clear_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """清空对话历史"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:

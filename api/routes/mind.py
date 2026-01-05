@@ -8,7 +8,7 @@ from datetime import datetime
 
 from api.services.db_service import db
 from api.services.ai_service import format_crystal_markdown
-from api.auth import get_current_user
+from api.auth import get_current_user_flexible
 
 router = APIRouter()
 
@@ -60,7 +60,7 @@ class TimelineResponse(BaseModel):
 
 
 @router.post("", response_model=MindResponse)
-async def create_mind(request: MindCreate, user: Dict[str, Any] = Depends(get_current_user)):
+async def create_mind(request: MindCreate, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """创建新的 Mind"""
     mind_id = f"mind_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
 
@@ -84,7 +84,7 @@ async def create_mind(request: MindCreate, user: Dict[str, Any] = Depends(get_cu
 
 
 @router.get("", response_model=MindListResponse)
-async def list_minds(user: Dict[str, Any] = Depends(get_current_user)):
+async def list_minds(user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取当前用户的 Mind 列表"""
     minds = db.list_minds(user_id=user["id"])
 
@@ -106,7 +106,7 @@ async def list_minds(user: Dict[str, Any] = Depends(get_current_user)):
 
 
 @router.get("/{mind_id}", response_model=MindResponse)
-async def get_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取单个 Mind 详情"""
     mind = db.get_mind(mind_id, user_id=user["id"])
 
@@ -129,7 +129,7 @@ async def get_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user
 
 
 @router.delete("/{mind_id}")
-async def delete_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def delete_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """删除 Mind 及其所有关联数据"""
     mind = db.get_mind(mind_id, user_id=user["id"])
 
@@ -145,7 +145,7 @@ async def delete_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_u
 
 
 @router.get("/{mind_id}/crystal", response_model=CrystalResponse)
-async def get_crystal(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_crystal(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取 Mind 的结构视图"""
     mind = db.get_mind(mind_id, user_id=user["id"])
 
@@ -163,7 +163,7 @@ async def get_crystal(mind_id: str, user: Dict[str, Any] = Depends(get_current_u
 
 
 @router.get("/{mind_id}/timeline", response_model=TimelineResponse)
-async def get_timeline(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_timeline(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取 Mind 的时间线"""
     mind = db.get_mind(mind_id, user_id=user["id"])
 

@@ -1,20 +1,32 @@
 /**
- * API 封装
+ * API 封装 - 支持 Token 认证
  */
 const app = getApp()
 
-const request = (url, method = 'GET', data = null) => {
+const request = (url, method = 'GET', data = null, requireAuth = true) => {
   return new Promise((resolve, reject) => {
+    // 构建请求头
+    const header = {
+      'Content-Type': 'application/json'
+    }
+
+    // 添加 Token 认证
+    if (requireAuth && app.globalData.token) {
+      header['Authorization'] = `Bearer ${app.globalData.token}`
+    }
+
     wx.request({
       url: `${app.globalData.baseUrl}${url}`,
       method,
       data,
-      header: {
-        'Content-Type': 'application/json'
-      },
+      header,
       success: (res) => {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data)
+        } else if (res.statusCode === 401) {
+          // Token 过期或无效，清除登录状态
+          app.clearLoginState()
+          reject({ code: 401, message: '登录已过期，请重新登录' })
         } else {
           reject(res)
         }
@@ -22,6 +34,18 @@ const request = (url, method = 'GET', data = null) => {
       fail: reject
     })
   })
+}
+
+// 认证相关 API
+const auth = {
+  // 微信登录（检查绑定状态）
+  wxLogin: (code) => request('/auth/wx-login', 'POST', { code }, false),
+
+  // 微信绑定账号
+  wxBind: (code, username, password) => request('/auth/wx-bind', 'POST', { code, username, password }, false),
+
+  // 获取当前用户信息
+  getMe: () => request('/auth/wx-me', 'GET', null, true)
 }
 
 // Mind 相关 API
@@ -71,4 +95,4 @@ const api = {
   deleteFeed: (feedId) => request(`/feeds/${feedId}`, 'DELETE')
 }
 
-module.exports = api
+module.exports = { api, auth }
