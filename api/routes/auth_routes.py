@@ -42,7 +42,8 @@ async def login(request: LoginRequest, response: Response):
         value=token,
         httponly=True,
         max_age=7 * 24 * 60 * 60,  # 7天
-        samesite="lax"
+        samesite="lax",
+        path="/"  # 确保 Cookie 对整个站点有效
     )
 
     return LoginResponse(
@@ -59,7 +60,7 @@ async def login(request: LoginRequest, response: Response):
 @router.post("/logout")
 async def logout(response: Response):
     """用户登出"""
-    response.delete_cookie(key="session_token")
+    response.delete_cookie(key="session_token", path="/")
     return {"success": True, "message": "已退出登录"}
 
 
