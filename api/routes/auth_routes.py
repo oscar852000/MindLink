@@ -4,7 +4,7 @@
 from fastapi import APIRouter, HTTPException, Response, Cookie
 from pydantic import BaseModel
 from typing import Optional
-from api.auth import get_auth_manager
+from api.auth import get_auth_manager, is_admin
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -52,7 +52,7 @@ async def login(request: LoginRequest, response: Response):
         user={
             "id": user['id'],
             "username": user['username'],
-            "is_admin": bool(user.get('is_admin', 0))
+            "is_admin": is_admin(user)
         }
     )
 
@@ -81,6 +81,6 @@ async def get_current_user_info(session_token: Optional[str] = Cookie(None)):
         "user": {
             "id": user['id'],
             "username": user['username'],
-            "is_admin": bool(user.get('is_admin', 0))
+            "is_admin": is_admin(user)
         }
     }
