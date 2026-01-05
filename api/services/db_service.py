@@ -42,10 +42,11 @@ class Database:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            # Mind 表
+            # Mind 表（包含 user_id 字段）
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS minds (
                     id TEXT PRIMARY KEY,
+                    user_id INTEGER NOT NULL DEFAULT 1,
                     title TEXT NOT NULL,
                     north_star TEXT,
                     crystal_json TEXT,
@@ -150,12 +151,19 @@ class Database:
             if 'summary' not in columns:
                 cursor.execute("ALTER TABLE minds ADD COLUMN summary TEXT")
 
+            # 检查并添加 minds.user_id 字段（兼容旧数据库）
+            if 'user_id' not in columns:
+                cursor.execute("ALTER TABLE minds ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1")
+                # 将现有数据归属给管理员（user_id=1）
+                cursor.execute("UPDATE minds SET user_id = 1 WHERE user_id IS NULL")
+                logger.info("数据库迁移：已添加 user_id 字段，现有数据归属管理员")
+
             conn.commit()
             logger.info("数据库初始化完成")
 
     # ========== Mind 操作 ==========
 
-    def create_mind(self, mind_id: str, title: str, north_star: Optional[str] = None) -> Dict[str, Any]:
+    def create_mind(self, mind_id: str, title: str, user_id: int, north_star: Optional[str] = None) -> Dict[str, Any]:
         """创建 Mind"""
         now = datetime.now().isoformat()
         initial_crystal = {
@@ -169,9 +177,9 @@ class Database:
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO minds (id, title, north_star, crystal_json, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (mind_id, title, north_star, json.dumps(initial_crystal, ensure_ascii=False), now, now))
+                INSERT INTO minds (id, user_id, title, north_star, crystal_json, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (mind_id, user_id, title, north_star, json.dumps(initial_crystal, ensure_ascii=False), now, now))
             conn.commit()
 
             # 记录事件
@@ -179,6 +187,7 @@ class Database:
 
         return {
             "id": mind_id,
+            "user_id": user_id,
             "title": title,
             "north_star": north_star,
             "crystal": initial_crystal,
@@ -186,11 +195,14 @@ class Database:
             "updated_at": now
         }
 
-    def get_mind(self, mind_id: str) -> Optional[Dict[str, Any]]:
-        """获取 Mind"""
+    def get_mind(self, mind_id: str, user_id: int = None) -> Optional[Dict[str, Any]]:
+        """获取 Mind（可选验证 user_id）"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM minds WHERE id = ?", (mind_id,))
+            if user_id is not None:
+                cursor.execute("SELECT * FROM minds WHERE id = ? AND user_id = ?", (mind_id, user_id))
+            else:
+                cursor.execute("SELECT * FROM minds WHERE id = ?", (mind_id,))
             row = cursor.fetchone()
 
             if not row:
@@ -198,6 +210,7 @@ class Database:
 
             return {
                 "id": row["id"],
+                "user_id": row["user_id"] if "user_id" in row.keys() else 1,
                 "title": row["title"],
                 "north_star": row["north_star"],
                 "crystal": json.loads(row["crystal_json"]) if row["crystal_json"] else None,
@@ -207,15 +220,19 @@ class Database:
                 "updated_at": row["updated_at"]
             }
 
-    def list_minds(self) -> List[Dict[str, Any]]:
-        """获取所有 Mind"""
+    def list_minds(self, user_id: int = None) -> List[Dict[str, Any]]:
+        """获取 Mind 列表（可选按 user_id 过滤）"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM minds ORDER BY updated_at DESC")
+            if user_id is not None:
+                cursor.execute("SELECT * FROM minds WHERE user_id = ? ORDER BY updated_at DESC", (user_id,))
+            else:
+                cursor.execute("SELECT * FROM minds ORDER BY updated_at DESC")
             rows = cursor.fetchall()
 
             return [{
                 "id": row["id"],
+                "user_id": row["user_id"] if "user_id" in row.keys() else 1,
                 "title": row["title"],
                 "north_star": row["north_star"],
                 "crystal": json.loads(row["crystal_json"]) if row["crystal_json"] else None,
@@ -224,10 +241,16 @@ class Database:
                 "updated_at": row["updated_at"]
             } for row in rows]
 
-    def delete_mind(self, mind_id: str) -> bool:
-        """删除 Mind 及其所有关联数据"""
+    def delete_mind(self, mind_id: str, user_id: int = None) -> bool:
+        """删除 Mind 及其所有关联数据（可选验证 user_id）"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
+
+            # 如果指定了 user_id，先验证归属
+            if user_id is not None:
+                cursor.execute("SELECT id FROM minds WHERE id = ? AND user_id = ?", (mind_id, user_id))
+                if not cursor.fetchone():
+                    return False
 
             # 删除关联的 feed_items
             cursor.execute("DELETE FROM feed_items WHERE mind_id = ?", (mind_id,))

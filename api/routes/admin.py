@@ -2,13 +2,15 @@
 管理路由 - 提示词管理
 
 提示词定义在 api/prompts.py，此文件只负责 API 路由。
+仅管理员可访问。
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from api.services.db_service import db
 from api.prompts import PROMPT_REGISTRY, get_prompt
+from api.auth import require_admin
 
 router = APIRouter()
 
@@ -42,8 +44,8 @@ class PromptListResponse(BaseModel):
 # ============================================================
 
 @router.get("/prompts", response_model=PromptListResponse)
-async def list_prompts():
-    """获取所有提示词"""
+async def list_prompts(admin: Dict[str, Any] = Depends(require_admin)):
+    """获取所有提示词（仅管理员）"""
     # 从数据库获取已存在的提示词
     db_prompts = db.get_all_prompts()
     existing_keys = {p["key"] for p in db_prompts}
@@ -78,8 +80,8 @@ async def list_prompts():
 
 
 @router.get("/prompts/{key}", response_model=PromptItem)
-async def get_prompt_by_key(key: str):
-    """获取单个提示词"""
+async def get_prompt_by_key(key: str, admin: Dict[str, Any] = Depends(require_admin)):
+    """获取单个提示词（仅管理员）"""
     # 先尝试从数据库获取
     db_prompts = db.get_all_prompts()
     prompt = next((p for p in db_prompts if p["key"] == key), None)
@@ -117,8 +119,9 @@ async def get_prompt_by_key(key: str):
 
 
 @router.put("/prompts/{key}", response_model=PromptItem)
-async def update_prompt(key: str, request: PromptUpdate):
-    """更新提示词内容"""
+async def update_prompt(key: str, request: PromptUpdate,
+                        admin: Dict[str, Any] = Depends(require_admin)):
+    """更新提示词内容（仅管理员）"""
     # 获取元数据
     meta = PROMPT_REGISTRY.get(key)
     if not meta:
@@ -147,8 +150,8 @@ async def update_prompt(key: str, request: PromptUpdate):
 
 
 @router.post("/prompts/reset/{key}", response_model=PromptItem)
-async def reset_prompt(key: str):
-    """重置提示词为默认值"""
+async def reset_prompt(key: str, admin: Dict[str, Any] = Depends(require_admin)):
+    """重置提示词为默认值（仅管理员）"""
     meta = PROMPT_REGISTRY.get(key)
     if not meta:
         raise HTTPException(status_code=404, detail="Prompt not found")

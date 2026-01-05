@@ -1,7 +1,7 @@
 """
 Chat 路由 - AI 对话功能
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import logging
@@ -12,6 +12,7 @@ from api.services.chat_service import (
     get_available_models,
     get_available_styles
 )
+from api.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +73,10 @@ class StylesResponse(BaseModel):
 
 
 @router.post("/minds/{mind_id}/chat", response_model=ChatResponse)
-async def send_chat_message(mind_id: str, request: ChatRequest):
+async def send_chat_message(mind_id: str, request: ChatRequest,
+                            user: Dict[str, Any] = Depends(get_current_user)):
     """发送对话消息"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
@@ -110,9 +112,9 @@ async def send_chat_message(mind_id: str, request: ChatRequest):
 
 
 @router.get("/minds/{mind_id}/chat/history", response_model=ChatHistoryResponse)
-async def get_chat_history(mind_id: str):
+async def get_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
     """获取对话历史"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
@@ -121,9 +123,9 @@ async def get_chat_history(mind_id: str):
 
 
 @router.delete("/minds/{mind_id}/chat/history", response_model=ClearHistoryResponse)
-async def clear_chat_history(mind_id: str):
+async def clear_chat_history(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
     """清空对话历史"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 

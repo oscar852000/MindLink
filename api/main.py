@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
 
-from api.routes import mind, feed, admin, chat
+from api.routes import mind, feed, admin, chat, auth_routes
+from api.auth import get_current_user_optional, is_admin
 
 # 项目根目录（api 目录的父目录）
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -47,6 +48,7 @@ app = FastAPI(
 )
 
 # 注册路由
+app.include_router(auth_routes.router, prefix="/api", tags=["Auth"])
 app.include_router(mind.router, prefix="/api/minds", tags=["Mind"])
 app.include_router(feed.router, prefix="/api", tags=["Feed"])
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
@@ -64,7 +66,17 @@ def is_mobile(request: Request) -> bool:
 
 @app.get("/")
 async def root(request: Request):
-    """首页 - 根据设备返回不同页面"""
+    """首页 - 检查登录状态，未登录则跳转登录页"""
+    session_token = request.cookies.get("session_token")
+    user = get_current_user_optional(session_token)
+
+    if not user:
+        # 未登录，跳转登录页
+        if is_mobile(request):
+            return FileResponse(str(WEB_DIR / "login-mobile.html"))
+        return FileResponse(str(WEB_DIR / "login.html"))
+
+    # 已登录，返回主页面
     if is_mobile(request):
         return FileResponse(str(WEB_DIR / "mobile.html"))
     return FileResponse(str(WEB_DIR / "index.html"))
@@ -83,9 +95,38 @@ async def desktop_page():
 
 
 @app.get("/admin")
-async def admin():
-    """管理后台"""
+async def admin_page(request: Request):
+    """管理后台 - 仅管理员可访问"""
+    session_token = request.cookies.get("session_token")
+    user = get_current_user_optional(session_token)
+
+    if not user:
+        # 未登录，跳转登录页
+        if is_mobile(request):
+            return FileResponse(str(WEB_DIR / "login-mobile.html"))
+        return FileResponse(str(WEB_DIR / "login.html"))
+
+    if not is_admin(user):
+        # 非管理员，返回403或跳转首页
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=302)
+
     return FileResponse(str(WEB_DIR / "admin.html"))
+
+
+@app.get("/login")
+async def login_page(request: Request):
+    """登录页面"""
+    # 如果已登录，跳转首页
+    session_token = request.cookies.get("session_token")
+    user = get_current_user_optional(session_token)
+    if user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/", status_code=302)
+
+    if is_mobile(request):
+        return FileResponse(str(WEB_DIR / "login-mobile.html"))
+    return FileResponse(str(WEB_DIR / "login.html"))
 
 
 @app.get("/health")

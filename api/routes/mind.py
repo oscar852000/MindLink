@@ -1,13 +1,14 @@
 """
 Mind 路由 - 管理想法空间
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 from api.services.db_service import db
 from api.services.ai_service import format_crystal_markdown
+from api.auth import get_current_user
 
 router = APIRouter()
 
@@ -59,13 +60,14 @@ class TimelineResponse(BaseModel):
 
 
 @router.post("", response_model=MindResponse)
-async def create_mind(request: MindCreate):
+async def create_mind(request: MindCreate, user: Dict[str, Any] = Depends(get_current_user)):
     """创建新的 Mind"""
     mind_id = f"mind_{datetime.now().strftime('%Y%m%d%H%M%S%f')}"
 
     mind = db.create_mind(
         mind_id=mind_id,
         title=request.title,
+        user_id=user["id"],
         north_star=request.north_star
     )
 
@@ -82,9 +84,9 @@ async def create_mind(request: MindCreate):
 
 
 @router.get("", response_model=MindListResponse)
-async def list_minds():
-    """获取所有 Mind 列表"""
-    minds = db.list_minds()
+async def list_minds(user: Dict[str, Any] = Depends(get_current_user)):
+    """获取当前用户的 Mind 列表"""
+    minds = db.list_minds(user_id=user["id"])
 
     result = []
     for m in minds:
@@ -104,9 +106,9 @@ async def list_minds():
 
 
 @router.get("/{mind_id}", response_model=MindResponse)
-async def get_mind(mind_id: str):
+async def get_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
     """获取单个 Mind 详情"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
 
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
@@ -127,14 +129,14 @@ async def get_mind(mind_id: str):
 
 
 @router.delete("/{mind_id}")
-async def delete_mind(mind_id: str):
+async def delete_mind(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
     """删除 Mind 及其所有关联数据"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
 
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
 
-    success = db.delete_mind(mind_id)
+    success = db.delete_mind(mind_id, user_id=user["id"])
 
     if not success:
         raise HTTPException(status_code=500, detail="Failed to delete mind")
@@ -143,9 +145,9 @@ async def delete_mind(mind_id: str):
 
 
 @router.get("/{mind_id}/crystal", response_model=CrystalResponse)
-async def get_crystal(mind_id: str):
+async def get_crystal(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
     """获取 Mind 的结构视图"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
 
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
@@ -161,9 +163,9 @@ async def get_crystal(mind_id: str):
 
 
 @router.get("/{mind_id}/timeline", response_model=TimelineResponse)
-async def get_timeline(mind_id: str):
+async def get_timeline(mind_id: str, user: Dict[str, Any] = Depends(get_current_user)):
     """获取 Mind 的时间线"""
-    mind = db.get_mind(mind_id)
+    mind = db.get_mind(mind_id, user_id=user["id"])
 
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
