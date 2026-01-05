@@ -514,7 +514,7 @@ const MindLinkApp = (function() {
                 return;
             }
 
-            dom.structureContent.innerHTML = `<div class="structure__card">${markdownToHtml(data.structure_markdown)}</div>`;
+            dom.structureContent.innerHTML = markdownToHtml(data.structure_markdown);
         } catch (error) {
             console.error('加载结构失败:', error);
             dom.structureContent.innerHTML = '<p>加载失败</p>';
