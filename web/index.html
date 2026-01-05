@@ -20,11 +20,15 @@
                 <h1>MindLink</h1>
                 <p>把想法变成可演化的记忆单元<br>把单元连接成第二大脑神经网络</p>
                 <button id="createMindBtn" data-logic-id="create-mind-button">+ 新建 Mind</button>
-                <a href="/admin" data-logic-id="admin-link">提示词管理</a>
             </nav>
             <section id="mindList" data-logic-id="mind-list">
                 <!-- Dynamically populated Mind list -->
             </section>
+            <div data-logic-id="sidebar-footer" class="sidebar-footer">
+                <span id="currentUser" class="current-user"></span>
+                <a href="/admin" id="adminLink" class="admin-link" style="display:none;">提示词管理</a>
+                <button id="logoutBtn" class="logout-btn">退出登录</button>
+            </div>
         </aside>
 
         <!-- Main Content Area -->

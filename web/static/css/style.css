@@ -841,3 +841,45 @@ dialog::backdrop {
     border-radius: 12px;
     border: 1px solid rgba(34, 211, 238, 0.2);
 }
+/* ========== 用户信息和退出登录 ========== */
+
+.sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: auto;
+}
+
+.current-user {
+    font-size: 13px;
+    color: var(--text-dim);
+}
+
+.admin-link {
+    font-size: 13px;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.admin-link:hover {
+    text-decoration: underline;
+}
+
+.logout-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.logout-btn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}

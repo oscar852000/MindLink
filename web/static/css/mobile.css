@@ -855,3 +855,41 @@ dialog::backdrop {
     color: #000;
     font-weight: 600;
 }
+/* ========== 用户信息和退出登录 ========== */
+
+.drawer-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+}
+
+.current-user {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.admin-link {
+    font-size: 13px;
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.logout-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.logout-btn:active {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}

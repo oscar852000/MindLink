@@ -26,6 +26,7 @@ const chatStyle = document.getElementById('chatStyle');
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
+    loadUserInfo();
     loadMinds();
     setupEventListeners();
     // 默认激活第一个Tab
@@ -39,12 +40,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// 加载用户信息
+async function loadUserInfo() {
+    try {
+        const response = await fetch(`${API_BASE}/auth/me`, { credentials: 'same-origin' });
+        const data = await response.json();
+
+        if (data.logged_in && data.user) {
+            document.getElementById('currentUser').textContent = data.user.username;
+            // 管理员显示提示词管理链接
+            if (data.user.is_admin) {
+                document.getElementById('adminLink').style.display = 'block';
+            }
+        }
+    } catch (err) {
+        console.error('加载用户信息失败:', err);
+    }
+}
+
 // 设置事件监听
 function setupEventListeners() {
     // 创建 Mind 按钮
     document.getElementById('createMindBtn').addEventListener('click', () => {
         document.getElementById('createMindModal').showModal();
         document.getElementById('newMindTitle').focus();
+    });
+
+    // 退出登录按钮
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+            await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'same-origin' });
+            window.location.href = '/login';
+        } catch (err) {
+            console.error('退出登录失败:', err);
+        }
     });
 
     // 模态框按钮

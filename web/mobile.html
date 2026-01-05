@@ -40,7 +40,11 @@
                 </button>
             </div>
             <div id="mindList" data-logic-id="mind-list"></div>
-            <a href="/admin" data-logic-id="admin-link">Prompt Engineering</a>
+            <div data-logic-id="drawer-footer" class="drawer-footer">
+                <span id="currentUser" class="current-user"></span>
+                <a href="/admin" id="adminLink" class="admin-link" style="display:none;">提示词管理</a>
+                <button id="logoutBtn" class="logout-btn">退出登录</button>
+            </div>
         </aside>
         <div id="drawerOverlay" data-logic-id="drawer-overlay"></div>
 
