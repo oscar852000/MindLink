@@ -46,46 +46,14 @@
             border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
             -webkit-appearance: none;
         }
-        .btn:active { opacity: 0.9; }
         .btn:disabled { opacity: 0.6; }
         .error { background: #fee; color: #c00; padding: 12px; border-radius: 10px; margin-bottom: 20px; font-size: 14px; display: none; }
         .footer { text-align: center; margin-top: 24px; color: rgba(255,255,255,0.8); font-size: 12px; }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="logo">
-            <h1>MindLink</h1>
-            <p>把想法变成可演化的记忆单元<br>AI 负责清醒与表达</p>
-        </div>
-
-        <div id="error" class="error"></div>
-
-        <form id="loginForm" action="javascript:void(0);" method="post">
-            <div class="input-group">
-                <label for="username">用户名</label>
-                <input type="text" id="username" name="username" autocomplete="username" autocapitalize="none" required placeholder="请输入用户名">
-            </div>
-
-            <div class="input-group">
-                <label for="password">密码</label>
-                <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="请输入密码">
-            </div>
-
-            <button type="submit" class="btn" id="btn">登录</button>
-        </form>
-    </div>
-
-    <p class="footer">AI 驱动的想法整理助手</p>
-
     <script>
-        document.getElementById('loginForm').onsubmit = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-
+        function doLogin() {
             var btn = document.getElementById('btn');
             var error = document.getElementById('error');
             var u = document.getElementById('username').value.trim();
@@ -131,7 +99,33 @@
 
             xhr.send(JSON.stringify({username: u, password: p}));
             return false;
-        };
+        }
     </script>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>MindLink</h1>
+            <p>把想法变成可演化的记忆单元<br>AI 负责清醒与表达</p>
+        </div>
+
+        <div id="error" class="error"></div>
+
+        <form onsubmit="return doLogin()" method="post">
+            <div class="input-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" autocomplete="username" autocapitalize="none" required placeholder="请输入用户名">
+            </div>
+
+            <div class="input-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required placeholder="请输入密码">
+            </div>
+
+            <button type="submit" class="btn" id="btn">登录</button>
+        </form>
+    </div>
+
+    <p class="footer">AI 驱动的想法整理助手</p>
 </body>
 </html>
