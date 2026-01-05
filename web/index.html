@@ -6,47 +6,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MindLink - 持续清醒的第二大脑</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/static/css/style.css?v=20260105d">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260105f">
 </head>
 
 <body>
     <div class="app">
-        <!-- Sidebar: Mind List -->
+        <!-- Sidebar -->
         <aside class="sidebar">
             <header class="sidebar__header">
                 <div class="brand">
-                    <img src="/static/brand/logo.svg" alt="" class="brand__logo">
+                    <div class="brand__icon">
+                        <div class="brand__icon-inner"></div>
+                    </div>
                     <span class="brand__text">MindLink</span>
                 </div>
-                <p class="sidebar__slogan">把想法变成可演化的记忆单元<br>把单元连接成第二大脑神经网络</p>
-                <button id="createMindBtn" class="btn btn--create">+ 新建 Mind</button>
+                <p class="sidebar__slogan">记录即结晶。</p>
+                <button id="createMindBtn" class="btn btn--create">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>新建 Mind</span>
+                </button>
             </header>
-            <section id="mindList" class="sidebar__list">
-                <!-- Dynamically populated Mind list -->
-            </section>
+
+            <section id="mindList" class="sidebar__list"></section>
+
             <footer class="sidebar__footer">
-                <span id="currentUser" class="sidebar__user"></span>
-                <a href="/admin" id="adminLink" class="sidebar__admin-link" hidden>提示词管理</a>
-                <button id="logoutBtn" class="btn btn--logout">退出登录</button>
+                <div class="sidebar__user-info">
+                    <span id="currentUser" class="sidebar__user"></span>
+                    <a href="/admin" id="adminLink" class="sidebar__admin-link" hidden>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        提示词管理
+                    </a>
+                </div>
+                <button id="logoutBtn" class="btn btn--logout" title="退出登录">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </button>
             </footer>
         </aside>
 
-        <!-- Main Content Area -->
+        <!-- Main Content -->
         <main class="main">
             <!-- Empty State -->
             <section id="emptyState" class="empty-state">
-                <div class="empty-state__icon">✧</div>
+                <div class="empty-state__icon">
+                    <div class="empty-state__icon-outer"></div>
+                    <div class="empty-state__icon-inner"></div>
+                    <svg class="empty-state__icon-center" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                    </svg>
+                </div>
                 <h2 class="empty-state__title">选择或创建一个 Mind</h2>
-                <p class="empty-state__desc">开始整理你的碎碎念与洞察</p>
+                <p class="empty-state__desc">开始整理你的碎碎念与洞察，将其整流为有序认知。</p>
             </section>
 
-            <!-- Mind Detail View -->
+            <!-- Mind Detail -->
             <section id="mindDetail" class="mind-detail" hidden>
                 <header class="detail__header">
                     <h2 id="mindTitle" class="detail__title">Mind 标题</h2>
                 </header>
 
-                <!-- AI Generated Summary and Tags -->
+                <!-- Summary Area -->
                 <div id="summaryArea" class="detail__summary" hidden>
                     <p id="aiBrief" class="detail__brief"></p>
                     <div id="tagCloud" class="detail__tags"></div>
@@ -54,39 +87,87 @@
 
                 <!-- Tab Navigation -->
                 <nav class="tabs">
-                    <button class="tabs__btn is-active" data-tab="feed">投喂</button>
-                    <button class="tabs__btn" data-tab="structure">结构</button>
-                    <button class="tabs__btn" data-tab="timeline">时间轴</button>
-                    <button class="tabs__btn" data-tab="chat">对话</button>
-                    <button class="tabs__btn" data-tab="narrative">叙事</button>
-                    <button class="tabs__btn" data-tab="output">输出</button>
+                    <button class="tabs__btn is-active" data-tab="feed">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        投喂
+                    </button>
+                    <button class="tabs__btn" data-tab="structure">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        结构
+                    </button>
+                    <button class="tabs__btn" data-tab="timeline">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                        时间轴
+                    </button>
+                    <button class="tabs__btn" data-tab="chat">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        对话
+                    </button>
+                    <button class="tabs__btn" data-tab="narrative">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                        叙事
+                    </button>
+                    <button class="tabs__btn" data-tab="output">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                        输出
+                    </button>
                 </nav>
 
-                <!-- Tab Content Container -->
+                <!-- Tab Content -->
                 <div class="tab-content">
-                    <!-- Tab 1: Feed (投喂) -->
+                    <!-- Feed Tab -->
                     <section id="feedTab" class="tab-pane is-active">
-                        <div class="feed__input-area">
-                            <textarea id="feedInput" class="feed__textarea"
-                                placeholder="想到什么写什么，AI 会自动去噪处理..."></textarea>
-                            <button id="feedBtn" class="btn btn--primary feed__submit">记录思想</button>
+                        <div class="feed__card">
+                            <textarea id="feedInput" class="feed__textarea" placeholder="想到什么写什么，AI 会自动去噪处理..."></textarea>
+                            <div class="feed__actions">
+                                <span class="feed__hint">支持 Ctrl + Enter 快速记录</span>
+                                <button id="feedBtn" class="btn btn--primary feed__submit">
+                                    <svg class="feed__icon-sparkles" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 3v18M5.5 8.5l13 7M18.5 8.5l-13 7"/>
+                                    </svg>
+                                    <span class="feed__btn-text">记录思想</span>
+                                </button>
+                            </div>
                         </div>
                         <div id="feedStatus" class="feed__status"></div>
                     </section>
 
-                    <!-- Tab 2: Structure (结构) -->
+                    <!-- Structure Tab -->
                     <section id="structureTab" class="tab-pane">
-                        <header class="tab-pane__header">提炼核心认知，结构化展示</header>
-                        <div id="structureContent" class="structure__content"></div>
+                        <div class="structure__card">
+                            <h3 class="structure__header">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="4 17 10 11 4 5"></polyline>
+                                    <line x1="12" y1="19" x2="20" y2="19"></line>
+                                </svg>
+                                提炼核心认知，结构化展示
+                            </h3>
+                            <div id="structureContent" class="structure__content"></div>
+                        </div>
                     </section>
 
-                    <!-- Tab 3: Timeline (时间轴) -->
+                    <!-- Timeline Tab -->
                     <section id="timelineTab" class="tab-pane">
-                        <header class="tab-pane__header">去噪后的原始记录，按时间轴回溯</header>
                         <div id="timelineContent" class="timeline__content"></div>
                     </section>
 
-                    <!-- Tab 4: Chat (对话) -->
+                    <!-- Chat Tab -->
                     <section id="chatTab" class="tab-pane tab-pane--chat">
                         <header class="chat__controls">
                             <select id="chatModel" class="chat__select">
@@ -99,7 +180,7 @@
                                 <option value="socratic">苏格拉底式</option>
                                 <option value="creative">创意发散</option>
                             </select>
-                            <button id="clearChatBtn" class="btn btn--secondary">刷新</button>
+                            <button id="clearChatBtn" class="btn btn--ghost">刷新</button>
                         </header>
                         <div id="chatMessages" class="chat__messages">
                             <div class="chat__welcome">
@@ -108,26 +189,29 @@
                             </div>
                         </div>
                         <div class="chat__input-area">
-                            <textarea id="chatInput" class="chat__input" placeholder="输入你想讨论的内容..."
-                                rows="1"></textarea>
-                            <button id="sendChatBtn" class="btn btn--send">↑</button>
+                            <input type="text" id="chatInput" class="chat__input" placeholder="询问关于当前主题的见解...">
+                            <button id="sendChatBtn" class="btn btn--send">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
+                            </button>
                         </div>
                     </section>
 
-                    <!-- Tab 5: Narrative (叙事) -->
+                    <!-- Narrative Tab -->
                     <section id="narrativeTab" class="tab-pane">
-                        <header class="tab-pane__header">
-                            <p>整合所有记录，生成连贯的思想叙事</p>
+                        <header class="narrative__header">
+                            <p class="narrative__desc">整合所有记录，生成连贯的思想叙事</p>
                             <button id="generateNarrativeBtn" class="btn btn--secondary">生成叙事</button>
                         </header>
                         <div id="narrativeContent" class="narrative__content"></div>
                     </section>
 
-                    <!-- Tab 6: Output (输出) -->
+                    <!-- Output Tab -->
                     <section id="outputTab" class="tab-pane">
                         <div class="output__input-area">
-                            <input type="text" id="outputInstruction" class="output__input"
-                                placeholder="例如：写一段给投资人看的说明">
+                            <input type="text" id="outputInstruction" class="output__input" placeholder="例如：写一段给投资人看的说明">
                             <button id="outputBtn" class="btn btn--primary">生成</button>
                         </div>
                         <div id="outputResult" class="output__result"></div>
@@ -137,33 +221,33 @@
         </main>
     </div>
 
-    <!-- Modal: Create Mind -->
+    <!-- Create Mind Modal -->
     <dialog id="createMindModal" class="modal">
         <div class="modal__content">
             <h3 class="modal__title">创建新的 Mind</h3>
             <p class="modal__desc">为一个新的话题、项目或思考方向命名</p>
-            <input type="text" id="newMindTitle" class="modal__input" placeholder="例如：我的 2024 产品观">
+            <input type="text" id="newMindTitle" class="modal__input" placeholder="例如：2026 增长策略思考">
             <div class="modal__actions">
-                <button id="modalCancelBtn" class="btn btn--text">取消</button>
+                <button id="modalCancelBtn" class="btn btn--ghost">取消</button>
                 <button id="modalCreateBtn" class="btn btn--primary">创建档案</button>
             </div>
         </div>
     </dialog>
 
-    <!-- Modal: Edit Feed -->
+    <!-- Edit Feed Modal -->
     <dialog id="editFeedModal" class="modal">
         <div class="modal__content">
             <h3 class="modal__title">编辑记录</h3>
             <input type="hidden" id="editFeedId">
             <textarea id="editFeedContent" class="modal__textarea" rows="5" placeholder="输入内容..."></textarea>
             <div class="modal__actions">
-                <button id="editCancelBtn" class="btn btn--text">取消</button>
+                <button id="editCancelBtn" class="btn btn--ghost">取消</button>
                 <button id="editSaveBtn" class="btn btn--primary">保存</button>
             </div>
         </div>
     </dialog>
 
-    <script src="/static/js/app.js?v=20260105d"></script>
+    <script src="/static/js/app.js?v=20260105f"></script>
 </body>
 
 </html>

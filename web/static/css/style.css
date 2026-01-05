@@ -44,7 +44,7 @@
 
 body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-deep);
     color: var(--text-main);
     line-height: 1.6;
@@ -93,9 +93,15 @@ body {
     padding: 16px;
     border-top: 1px solid var(--border);
     display: flex;
-    flex-direction: column;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
     margin-top: auto;
+}
+
+.sidebar__user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .sidebar__user {
@@ -104,9 +110,12 @@ body {
 }
 
 .sidebar__admin-link {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--primary);
     text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .sidebar__admin-link:hover {
@@ -117,13 +126,44 @@ body {
 .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
-.brand__logo {
-    width: 28px;
-    height: 28px;
-    flex-shrink: 0;
+.brand__icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary), rgba(0, 245, 255, 0.3));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.brand__icon::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.2));
+}
+
+.brand__icon-inner {
+    width: 20px;
+    height: 20px;
+    background: var(--bg-deep);
+    border-radius: 4px;
+    transform: rotate(45deg);
+    animation: iconPulse 3s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: rotate(45deg) scale(1);
+    }
+    50% {
+        transform: rotate(45deg) scale(0.9);
+    }
 }
 
 .brand__text {
@@ -140,6 +180,10 @@ body {
     cursor: pointer;
     font-weight: 600;
     transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .btn--create {
@@ -148,6 +192,7 @@ body {
     border: 1px solid rgba(34, 211, 238, 0.3);
     color: var(--primary);
     padding: 12px;
+    font-size: 14px;
 }
 
 .btn--create:hover {
@@ -162,6 +207,10 @@ body {
     font-weight: 700;
 }
 
+.btn--primary:hover {
+    box-shadow: 0 0 30px rgba(0, 245, 255, 0.3);
+}
+
 .btn--primary:active {
     transform: scale(0.96);
 }
@@ -173,19 +222,24 @@ body {
     padding: 10px 20px;
 }
 
-.btn--text {
+.btn--ghost {
     background: none;
     color: var(--text-dim);
     padding: 10px 16px;
+}
+
+.btn--ghost:hover {
+    color: var(--text-main);
 }
 
 .btn--logout {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text-dim);
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 13px;
+    padding: 8px;
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
 }
 
 .btn--logout:hover {
@@ -201,6 +255,11 @@ body {
     height: 44px;
     border-radius: 14px;
     font-weight: bold;
+    flex-shrink: 0;
+}
+
+.btn--send:hover {
+    box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
 }
 
 /* ========== 7. 主内容区 ========== */
@@ -225,18 +284,57 @@ body {
 }
 
 .empty-state__icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    opacity: 0.2;
+    width: 120px;
+    height: 120px;
+    margin-bottom: 32px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-state__icon-outer {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 245, 255, 0.2);
+    animation: emptyPulse 3s ease-in-out infinite;
+}
+
+.empty-state__icon-inner {
+    position: absolute;
+    inset: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 245, 255, 0.3);
+    animation: emptyPulse 3s ease-in-out infinite 0.5s;
+}
+
+.empty-state__icon-center {
+    color: var(--primary);
+    opacity: 0.5;
+}
+
+@keyframes emptyPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
 }
 
 .empty-state__title {
+    font-size: 24px;
     color: #fff;
-    margin-bottom: 8px;
+    margin: 0 0 8px;
+    font-weight: 600;
 }
 
 .empty-state__desc {
     margin: 0;
+    font-size: 14px;
 }
 
 /* ========== 9. Mind 详情 ========== */
@@ -311,6 +409,13 @@ body {
     white-space: nowrap;
     position: relative;
     transition: color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tabs__btn:hover {
+    color: var(--text-main);
 }
 
 .tabs__btn.is-active {
@@ -355,43 +460,70 @@ body {
     flex-direction: column;
 }
 
-.tab-pane__header {
-    margin-bottom: 24px;
-    color: var(--text-dim);
-    font-size: 14px;
-}
-
 /* ========== 12. 投喂 Tab ========== */
-.feed__input-area {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
+.feed__card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px;
+    backdrop-filter: blur(10px);
 }
 
 .feed__textarea {
     width: 100%;
-    min-height: 200px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 24px;
+    min-height: 180px;
+    background: transparent;
+    border: none;
     color: #fff;
-    font-size: 18px;
+    font-size: 16px;
+    line-height: 1.6;
     resize: none;
-    transition: border-color 0.3s, box-shadow 0.3s;
-    backdrop-filter: blur(10px);
+    font-family: inherit;
+}
+
+.feed__textarea::placeholder {
+    color: var(--text-dim);
 }
 
 .feed__textarea:focus {
     outline: none;
-    border-color: rgba(34, 211, 238, 0.5);
-    box-shadow: 0 0 30px rgba(34, 211, 238, 0.05);
+}
+
+.feed__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.feed__hint {
+    font-size: 12px;
+    color: var(--text-dim);
 }
 
 .feed__submit {
-    align-self: flex-end;
     border-radius: 50px;
-    padding: 14px 40px;
+    padding: 12px 28px;
+    font-size: 14px;
+}
+
+.feed__icon-sparkles {
+    animation: sparkle 2s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.feed__btn-text {
+    font-weight: 600;
 }
 
 .feed__status {
@@ -415,6 +547,12 @@ body {
     padding: 8px 12px;
     border-radius: 10px;
     font-size: 13px;
+    cursor: pointer;
+}
+
+.chat__select:focus {
+    outline: none;
+    border-color: rgba(0, 245, 255, 0.3);
 }
 
 .chat__messages {
@@ -433,6 +571,7 @@ body {
 .chat__message {
     margin-bottom: 24px;
     max-width: 85%;
+    animation: fadeSlideIn 0.3s ease-out;
 }
 
 .chat__message--user {
@@ -453,11 +592,12 @@ body {
     border-radius: 18px;
     border: 1px solid var(--border);
     font-size: 15px;
+    backdrop-filter: blur(10px);
 }
 
 .chat__message--user .chat__bubble {
-    background: rgba(34, 211, 238, 0.1);
-    border-color: rgba(34, 211, 238, 0.2);
+    background: rgba(0, 245, 255, 0.1);
+    border-color: rgba(0, 245, 255, 0.2);
 }
 
 .chat__input-area {
@@ -467,6 +607,7 @@ body {
     padding: 8px;
     border-radius: 20px;
     border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
 }
 
 .chat__input {
@@ -475,11 +616,16 @@ body {
     border: none;
     color: #fff;
     padding: 12px;
-    resize: none;
+    font-size: 15px;
+    font-family: inherit;
 }
 
 .chat__input:focus {
     outline: none;
+}
+
+.chat__input::placeholder {
+    color: var(--text-dim);
 }
 
 /* ========== 14. 时间轴 Tab ========== */
@@ -494,6 +640,7 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
+    font-size: 14px;
 }
 
 .timeline__date:first-child {
@@ -513,7 +660,8 @@ body {
     padding: 24px;
     border-radius: 20px;
     margin-bottom: 20px;
-    animation: fadeIn 0.5s ease-out;
+    animation: fadeSlideIn 0.5s ease-out;
+    backdrop-filter: blur(10px);
 }
 
 .timeline__item--current {
@@ -540,7 +688,7 @@ body {
     font-size: 10px;
     font-weight: 600;
     color: var(--primary);
-    background: rgba(0, 122, 255, 0.15);
+    background: var(--primary-glow);
     padding: 2px 8px;
     border-radius: 10px;
 }
@@ -594,42 +742,67 @@ body {
 }
 
 .timeline__dropdown-btn--danger {
-    color: #ff4444;
+    color: var(--accent-red);
 }
 
 /* ========== 15. 结构 Tab ========== */
-.structure__content {
-    /* Container */
-}
-
 .structure__card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     padding: 24px;
     border-radius: 20px;
     margin-bottom: 20px;
-    animation: fadeIn 0.5s ease-out;
+    backdrop-filter: blur(10px);
+    animation: fadeSlideIn 0.5s ease-out;
 }
 
-.structure__card h3 {
+.structure__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 16px;
+}
+
+.structure__content h3 {
     color: var(--primary);
     font-size: 16px;
-    margin-top: 0;
-    border-bottom: 1px solid var(--border);
+    margin: 24px 0 12px;
     padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
 }
 
-.structure__card ul {
+.structure__content h3:first-child {
+    margin-top: 0;
+}
+
+.structure__content ul {
     padding-left: 18px;
-    margin-bottom: 0;
+    margin: 0;
 }
 
-.structure__card li {
+.structure__content li {
     margin-bottom: 8px;
     color: var(--text-main);
+    line-height: 1.5;
 }
 
 /* ========== 16. 叙事 Tab ========== */
+.narrative__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.narrative__desc {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin: 0;
+}
+
 .narrative__content {
     /* Container */
 }
@@ -640,7 +813,8 @@ body {
     padding: 24px;
     border-radius: 20px;
     margin-bottom: 20px;
-    animation: fadeIn 0.5s ease-out;
+    backdrop-filter: blur(10px);
+    animation: fadeSlideIn 0.5s ease-out;
 }
 
 /* ========== 17. 输出 Tab ========== */
@@ -655,13 +829,19 @@ body {
     background: var(--bg-card);
     border: 1px solid var(--border);
     color: #fff;
-    padding: 14px;
-    border-radius: 12px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-family: inherit;
+}
+
+.output__input::placeholder {
+    color: var(--text-dim);
 }
 
 .output__input:focus {
     outline: none;
-    border-color: rgba(34, 211, 238, 0.5);
+    border-color: rgba(0, 245, 255, 0.3);
 }
 
 .output__result {
@@ -674,6 +854,7 @@ body {
     padding: 24px;
     border-radius: 20px;
     white-space: pre-wrap;
+    backdrop-filter: blur(10px);
 }
 
 /* ========== 18. Mind 列表项 ========== */
@@ -708,6 +889,7 @@ body {
     margin: 0;
     font-size: 15px;
     color: #fff;
+    font-weight: 500;
 }
 
 .mind-item__summary {
@@ -744,8 +926,8 @@ body {
 }
 
 .mind-item__delete:hover {
-    background: rgba(255, 82, 82, 0.2);
-    color: #ff5252;
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--accent-red);
 }
 
 /* ========== 19. 模态框 ========== */
@@ -756,6 +938,8 @@ body {
     padding: 32px;
     color: var(--text-main);
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    max-width: 400px;
+    width: 90%;
 }
 
 .modal::backdrop {
@@ -771,6 +955,7 @@ body {
     margin: 0 0 8px;
     font-size: 18px;
     color: #fff;
+    font-weight: 600;
 }
 
 .modal__desc {
@@ -787,11 +972,17 @@ body {
     border-radius: 12px;
     color: #fff;
     margin-bottom: 20px;
+    font-size: 15px;
+    font-family: inherit;
+}
+
+.modal__input::placeholder {
+    color: var(--text-dim);
 }
 
 .modal__input:focus {
     outline: none;
-    border-color: rgba(34, 211, 238, 0.5);
+    border-color: rgba(0, 245, 255, 0.3);
 }
 
 .modal__textarea {
@@ -809,9 +1000,13 @@ body {
     font-family: inherit;
 }
 
+.modal__textarea::placeholder {
+    color: var(--text-dim);
+}
+
 .modal__textarea:focus {
     outline: none;
-    border-color: rgba(34, 211, 238, 0.5);
+    border-color: rgba(0, 245, 255, 0.3);
 }
 
 .modal__actions {
@@ -870,7 +1065,7 @@ body {
     background: rgba(0, 0, 0, 0.3);
     padding: 2px 6px;
     border-radius: 4px;
-    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+    font-family: 'JetBrains Mono', "SF Mono", Monaco, monospace;
     font-size: 0.9em;
     color: var(--accent-green);
 }
@@ -887,6 +1082,15 @@ body {
 
 /* ========== 21. 动画 ========== */
 @keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeSlideIn {
     from {
         opacity: 0;
         transform: translateY(10px);
