@@ -380,25 +380,26 @@ const MindLinkApp = (function() {
 
                 day.items.forEach(item => {
                     const currentTag = isFirst ? '<span class="timeline__tag">当前</span>' : '';
-                    const currentClass = isFirst ? ' timeline__item--current' : '';
 
                     html += `
-                        <div class="timeline__item${currentClass}" data-feed-id="${item.id}">
-                            <div class="timeline__item-header">
-                                <span class="timeline__time">${item.time}${currentTag}</span>
-                                <button class="timeline__menu-btn" data-feed-id="${item.id}">
-                                    <svg viewBox="0 0 24 24" width="16" height="16">
-                                        <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
-                                        <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-                                        <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
-                                    </svg>
-                                </button>
-                                <div class="timeline__dropdown" data-dropdown-id="${item.id}">
-                                    <button class="timeline__dropdown-btn" data-action="edit" data-feed-id="${item.id}">编辑</button>
-                                    <button class="timeline__dropdown-btn timeline__dropdown-btn--danger" data-action="delete" data-feed-id="${item.id}">删除</button>
+                        <div class="timeline__item" data-feed-id="${item.id}">
+                            <div class="timeline__item-card">
+                                <div class="timeline__item-header">
+                                    <span class="timeline__time">${item.time}${currentTag}</span>
+                                    <button class="timeline__menu-btn" data-feed-id="${item.id}">
+                                        <svg viewBox="0 0 24 24" width="14" height="14">
+                                            <circle cx="12" cy="5" r="1.5" fill="currentColor"/>
+                                            <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                                            <circle cx="12" cy="19" r="1.5" fill="currentColor"/>
+                                        </svg>
+                                    </button>
+                                    <div class="timeline__dropdown" data-dropdown-id="${item.id}">
+                                        <button class="timeline__dropdown-btn" data-action="edit" data-feed-id="${item.id}">编辑</button>
+                                        <button class="timeline__dropdown-btn timeline__dropdown-btn--danger" data-action="delete" data-feed-id="${item.id}">删除</button>
+                                    </div>
                                 </div>
+                                <div class="timeline__text">${escapeHtml(item.content)}</div>
                             </div>
-                            <div class="timeline__text">${escapeHtml(item.content)}</div>
                         </div>
                     `;
                     isFirst = false;
