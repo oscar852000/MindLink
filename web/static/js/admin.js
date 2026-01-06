@@ -16,6 +16,11 @@ const CATEGORY_CONFIG = {
         name: '对话功能',
         description: '对话 Tab 相关',
         icon: '💬'
+    },
+    'memory': {
+        name: '晶体底层记忆',
+        description: '记忆锚点提取与管理',
+        icon: '🔮'
     }
 };
 
@@ -74,8 +79,8 @@ function renderPromptList() {
     // 渲染分组
     let html = '';
 
-    // 按固定顺序渲染：core, chat
-    const categoryOrder = ['core', 'chat'];
+    // 按固定顺序渲染：core, chat, memory
+    const categoryOrder = ['core', 'chat', 'memory'];
 
     categoryOrder.forEach(category => {
         if (!grouped[category] || grouped[category].length === 0) return;
