@@ -154,6 +154,24 @@ class Database:
                 )
             """)
 
+            # 晶体底层记忆表（Crystal Base Memory）
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS base_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    key TEXT NOT NULL,
+                    definition TEXT NOT NULL,
+                    category TEXT DEFAULT 'general',
+                    aliases TEXT,
+                    source_mind_id TEXT,
+                    version INTEGER DEFAULT 1,
+                    is_active INTEGER DEFAULT 1,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    UNIQUE(user_id, key)
+                )
+            """)
+
             # 检查并添加 minds.summary 字段（兼容旧数据库）
             cursor.execute("PRAGMA table_info(minds)")
             columns = [col[1] for col in cursor.fetchall()]
@@ -687,6 +705,159 @@ class Database:
             conn.commit()
             return cursor.rowcount > 0
 
+    # ========== 晶体底层记忆操作 ==========
+
+    def get_all_base_memory(self, user_id: int) -> List[Dict[str, Any]]:
+        """获取用户的全部活跃记忆条目"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM base_memory
+                WHERE user_id = ? AND is_active = 1
+                ORDER BY updated_at DESC
+            """, (user_id,))
+            rows = cursor.fetchall()
+            return [{
+                "id": row["id"],
+                "key": row["key"],
+                "definition": row["definition"],
+                "category": row["category"],
+                "aliases": json.loads(row["aliases"]) if row["aliases"] else [],
+                "source_mind_id": row["source_mind_id"],
+                "version": row["version"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"]
+            } for row in rows]
+
+    def get_base_memory_summary(self, user_id: int) -> str:
+        """获取精简版记忆摘要（用于提示词注入）"""
+        memories = self.get_all_base_memory(user_id)
+        if not memories:
+            return "（暂无记忆条目）"
+        
+        lines = []
+        for m in memories[:50]:  # 最多50条
+            aliases_str = f"（别名：{', '.join(m['aliases'])}）" if m['aliases'] else ""
+            lines.append(f"- {m['key']}{aliases_str}: {m['definition']}")
+        
+        return "\n".join(lines)
+
+    def get_base_memory_by_key(self, user_id: int, key: str) -> Optional[Dict[str, Any]]:
+        """根据 key 获取单条记忆"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT * FROM base_memory
+                WHERE user_id = ? AND key = ? AND is_active = 1
+            """, (user_id, key))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return {
+                "id": row["id"],
+                "key": row["key"],
+                "definition": row["definition"],
+                "category": row["category"],
+                "aliases": json.loads(row["aliases"]) if row["aliases"] else [],
+                "source_mind_id": row["source_mind_id"],
+                "version": row["version"],
+                "created_at": row["created_at"],
+                "updated_at": row["updated_at"]
+            }
+
+    def upsert_base_memory(
+        self,
+        user_id: int,
+        key: str,
+        definition: str,
+        category: str = "general",
+        aliases: List[str] = None,
+        source_mind_id: str = None
+    ) -> Dict[str, Any]:
+        """创建或更新记忆条目"""
+        now = datetime.now().isoformat()
+        aliases_json = json.dumps(aliases or [], ensure_ascii=False)
+        
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            # 检查是否已存在
+            cursor.execute("""
+                SELECT id, version FROM base_memory
+                WHERE user_id = ? AND key = ?
+            """, (user_id, key))
+            existing = cursor.fetchone()
+            
+            if existing:
+                # 更新现有记录
+                new_version = existing["version"] + 1
+                cursor.execute("""
+                    UPDATE base_memory
+                    SET definition = ?, category = ?, aliases = ?,
+                        source_mind_id = ?, version = ?, is_active = 1, updated_at = ?
+                    WHERE id = ?
+                """, (definition, category, aliases_json, source_mind_id, new_version, now, existing["id"]))
+                conn.commit()
+                logger.info(f"更新晶体底层记忆: {key} (v{new_version})")
+                return {
+                    "id": existing["id"],
+                    "key": key,
+                    "definition": definition,
+                    "category": category,
+                    "aliases": aliases or [],
+                    "source_mind_id": source_mind_id,
+                    "version": new_version,
+                    "action": "updated",
+                    "updated_at": now
+                }
+            else:
+                # 创建新记录
+                cursor.execute("""
+                    INSERT INTO base_memory
+                    (user_id, key, definition, category, aliases, source_mind_id, version, is_active, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, 1, 1, ?, ?)
+                """, (user_id, key, definition, category, aliases_json, source_mind_id, now, now))
+                conn.commit()
+                logger.info(f"创建晶体底层记忆: {key}")
+                return {
+                    "id": cursor.lastrowid,
+                    "key": key,
+                    "definition": definition,
+                    "category": category,
+                    "aliases": aliases or [],
+                    "source_mind_id": source_mind_id,
+                    "version": 1,
+                    "action": "created",
+                    "created_at": now
+                }
+
+    def deprecate_base_memory(self, user_id: int, key: str) -> bool:
+        """标记记忆条目为废弃"""
+        now = datetime.now().isoformat()
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE base_memory
+                SET is_active = 0, updated_at = ?
+                WHERE user_id = ? AND key = ?
+            """, (now, user_id, key))
+            conn.commit()
+            if cursor.rowcount > 0:
+                logger.info(f"废弃晶体底层记忆: {key}")
+                return True
+            return False
+
+    def delete_base_memory(self, user_id: int, key: str) -> bool:
+        """永久删除记忆条目"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                DELETE FROM base_memory
+                WHERE user_id = ? AND key = ?
+            """, (user_id, key))
+            conn.commit()
+            return cursor.rowcount > 0
+
 
 # 全局数据库实例
 db = Database()
+

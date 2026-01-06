@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import logging
 
-from api.routes import mind, feed, admin, chat, auth_routes
+from api.routes import mind, feed, admin, chat, auth_routes, memory
 from api.auth import get_current_user_optional, is_admin
 
 # 项目根目录（api 目录的父目录）
@@ -53,6 +53,7 @@ app.include_router(mind.router, prefix="/api/minds", tags=["Mind"])
 app.include_router(feed.router, prefix="/api", tags=["Feed"])
 app.include_router(chat.router, prefix="/api", tags=["Chat"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(memory.router, prefix="/api", tags=["Memory"])
 
 # 静态文件
 app.mount("/static", StaticFiles(directory=str(WEB_DIR / "static")), name="static")
@@ -127,6 +128,17 @@ async def login_page(request: Request):
     if is_mobile(request):
         return FileResponse(str(WEB_DIR / "login-mobile.html"))
     return FileResponse(str(WEB_DIR / "login.html"))
+
+
+@app.get("/memory")
+async def memory_page(request: Request):
+    """晶体底层记忆查看页面"""
+    session_token = request.cookies.get("session_token")
+    user = get_current_user_optional(session_token)
+    if not user:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/login", status_code=302)
+    return FileResponse(str(WEB_DIR / "memory.html"))
 
 
 @app.get("/health")

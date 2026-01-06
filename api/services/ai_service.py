@@ -168,10 +168,11 @@ async def generate_narrative_with_meta(
     mind_title: str,
     current_summary: Optional[str],
     current_tags: List[str],
-    tag_library: List[str]
+    tag_library: List[str],
+    existing_memory: str = ""
 ) -> Dict[str, Any]:
     """
-    生成叙事视图，同时更新概述和标签
+    生成叙事视图，同时更新概述、标签，并提取记忆锚点
 
     Args:
         cleaned_feeds: 去噪后的投喂列表
@@ -179,9 +180,10 @@ async def generate_narrative_with_meta(
         current_summary: 当前概述（可能为空）
         current_tags: 当前标签列表
         tag_library: 全局标签库
+        existing_memory: 现有晶体底层记忆摘要
 
     Returns:
-        {narrative, summary, summary_changed, tags, tags_changed}
+        {narrative, summary, summary_changed, tags, tags_changed, memory_anchors}
     """
     if not cleaned_feeds:
         return {
@@ -189,10 +191,19 @@ async def generate_narrative_with_meta(
             "summary": None,
             "summary_changed": False,
             "tags": [],
-            "tags_changed": False
+            "tags_changed": False,
+            "memory_anchors": []
         }
 
-    system_prompt = get_prompt("narrative_with_meta")
+    # 获取基础叙事提示词
+    base_prompt = get_prompt("narrative_with_meta")
+    
+    # 获取记忆锚点提示词并注入现有记忆
+    memory_prompt = get_prompt("memory_anchor")
+    memory_prompt = memory_prompt.replace("{existing_memory}", existing_memory or "（暂无记忆条目）")
+    
+    # 合并系统提示词
+    system_prompt = base_prompt + "\n\n" + memory_prompt
 
     # 构建时间轴内容
     timeline_text = "\n\n".join([
@@ -218,7 +229,7 @@ async def generate_narrative_with_meta(
 ## 全局标签库（优先复用）
 {tag_library_text}
 
-请生成叙事，并判断是否需要更新概述和标签。"""
+请生成叙事，判断是否需要更新概述和标签，并识别可纳入晶体底层记忆的锚点。"""
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -234,7 +245,8 @@ async def generate_narrative_with_meta(
             "summary": data.get("summary"),
             "summary_changed": data.get("summary_changed", False),
             "tags": data.get("tags", [])[:5],  # 最多5个标签
-            "tags_changed": data.get("tags_changed", False)
+            "tags_changed": data.get("tags_changed", False),
+            "memory_anchors": data.get("memory_anchors", [])
         }
 
     except json.JSONDecodeError as e:
@@ -244,7 +256,8 @@ async def generate_narrative_with_meta(
             "summary": None,
             "summary_changed": False,
             "tags": [],
-            "tags_changed": False
+            "tags_changed": False,
+            "memory_anchors": []
         }
     except Exception as e:
         logger.error(f"生成叙事失败: {e}")

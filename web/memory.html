@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>晶体底层记忆 - MindLink</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0B0C0F;
+            color: #E5E7EB;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #22d3ee;
+        }
+
+        .back-link {
+            color: #9CA3AF;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            color: #22d3ee;
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px 24px;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 600;
+            color: #22d3ee;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #9CA3AF;
+            margin-top: 4px;
+        }
+
+        .memory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .memory-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 16px 20px;
+            transition: all 0.2s ease;
+        }
+
+        .memory-item:hover {
+            border-color: rgba(34, 211, 238, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .memory-key {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .memory-category {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(34, 211, 238, 0.15);
+            color: #22d3ee;
+        }
+
+        .memory-category.person {
+            background: rgba(147, 51, 234, 0.15);
+            color: #a78bfa;
+        }
+
+        .memory-category.project {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .memory-category.concept {
+            background: rgba(251, 146, 60, 0.15);
+            color: #fb923c;
+        }
+
+        .memory-category.goal {
+            background: rgba(236, 72, 153, 0.15);
+            color: #f472b6;
+        }
+
+        .memory-definition {
+            font-size: 14px;
+            color: #9CA3AF;
+            line-height: 1.6;
+        }
+
+        .memory-meta {
+            display: flex;
+            gap: 16px;
+            margin-top: 12px;
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .memory-meta span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6B7280;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: #9CA3AF;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #9CA3AF;
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #6B7280;
+            cursor: pointer;
+            padding: 4px;
+            margin-left: 12px;
+            font-size: 12px;
+        }
+
+        .delete-btn:hover {
+            color: #ef4444;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🔮 晶体底层记忆</h1>
+            <a href="/" class="back-link">← 返回主页</a>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">-</div>
+                <div class="stat-label">记忆条目总数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="categoryCount">-</div>
+                <div class="stat-label">分类数量</div>
+            </div>
+        </div>
+
+        <div id="memoryList" class="memory-list">
+            <div class="loading">加载中...</div>
+        </div>
+    </div>
+
+    <script>
+        const categoryLabels = {
+            'person': '人物',
+            'project': '项目',
+            'concept': '概念',
+            'goal': '目标',
+            'general': '通用'
+        };
+
+        async function loadMemories() {
+            try {
+                const response = await fetch('/api/memory');
+                if (!response.ok) throw new Error('加载失败');
+
+                const data = await response.json();
+                renderMemories(data);
+            } catch (error) {
+                document.getElementById('memoryList').innerHTML = `
+                    <div class="empty-state">
+                        <h3>加载失败</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderMemories(data) {
+            const { memories, count } = data;
+
+            document.getElementById('totalCount').textContent = count;
+
+            // 统计分类数量
+            const categories = new Set(memories.map(m => m.category));
+            document.getElementById('categoryCount').textContent = categories.size;
+
+            const listEl = document.getElementById('memoryList');
+
+            if (count === 0) {
+                listEl.innerHTML = `
+                    <div class="empty-state">
+                        <h3>暂无记忆条目</h3>
+                        <p>点击任意晶体的「叙事」Tab，系统将自动提取并记录定义性锚点</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = memories.map(m => `
+                <div class="memory-item">
+                    <div class="memory-header">
+                        <span class="memory-key">${escapeHtml(m.key)}</span>
+                        <div>
+                            <span class="memory-category ${m.category}">${categoryLabels[m.category] || m.category}</span>
+                            <button class="delete-btn" onclick="deleteMemory('${escapeHtml(m.key)}')" title="删除">🗑</button>
+                        </div>
+                    </div>
+                    <div class="memory-definition">${escapeHtml(m.definition)}</div>
+                    <div class="memory-meta">
+                        <span>v${m.version}</span>
+                        <span>更新于 ${formatDate(m.updated_at)}</span>
+                        ${m.aliases && m.aliases.length ? `<span>别名: ${m.aliases.join(', ')}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteMemory(key) {
+            if (!confirm(`确定要删除「${key}」吗？`)) return;
+
+            try {
+                const response = await fetch(`/api/memory/${encodeURIComponent(key)}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('删除失败');
+                loadMemories();
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleDateString('zh-CN', {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        loadMemories();
+    </script>
+</body>
+
+</html>

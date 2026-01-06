@@ -242,7 +242,7 @@ class NarrativeResponse(BaseModel):
 
 @router.post("/minds/{mind_id}/narrative")
 async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
-    """生成叙事视图（点击触发），同时更新概述和标签"""
+    """生成叙事视图（点击触发），同时更新概述、标签，并提取记忆锚点"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
@@ -263,13 +263,17 @@ async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(g
         all_tags = db.get_all_tags()
         tag_library = [t["name"] for t in all_tags]
 
-        # 调用带元数据的叙事生成
+        # 获取现有晶体底层记忆摘要
+        existing_memory = db.get_base_memory_summary(user["id"])
+
+        # 调用带元数据的叙事生成（包含记忆锚点提取）
         result = await generate_narrative_with_meta(
             cleaned_feeds=feeds,
             mind_title=mind["title"],
             current_summary=current_summary,
             current_tags=current_tags,
-            tag_library=tag_library
+            tag_library=tag_library,
+            existing_memory=existing_memory
         )
 
         # 如果概述有变化，更新数据库
@@ -283,6 +287,28 @@ async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(g
         # 保存叙事内容
         if result["narrative"]:
             db.update_mind_narrative(mind_id, result["narrative"])
+
+        # 处理记忆锚点
+        memory_anchors = result.get("memory_anchors", [])
+        anchors_created = 0
+        anchors_updated = 0
+        for anchor in memory_anchors:
+            action = anchor.get("action", "skip")
+            if action in ("create", "update"):
+                db.upsert_base_memory(
+                    user_id=user["id"],
+                    key=anchor.get("key", ""),
+                    definition=anchor.get("definition", ""),
+                    category=anchor.get("category", "general"),
+                    source_mind_id=mind_id
+                )
+                if action == "create":
+                    anchors_created += 1
+                else:
+                    anchors_updated += 1
+        
+        if anchors_created or anchors_updated:
+            logger.info(f"晶体底层记忆更新: 创建{anchors_created}条, 更新{anchors_updated}条")
 
         return NarrativeResponse(
             narrative=result["narrative"],
