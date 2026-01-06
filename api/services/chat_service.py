@@ -38,7 +38,7 @@ def get_available_styles() -> List[Dict[str, Any]]:
 # 内部函数
 # ============================================================
 
-def _build_system_prompt(mind: Dict[str, Any], style: str) -> str:
+def _build_system_prompt(mind: Dict[str, Any], style: str, memory_context: str = "") -> str:
     """构建系统提示词"""
     mind_id = mind["id"]
     mind_title = mind["title"]
@@ -68,6 +68,10 @@ def _build_system_prompt(mind: Dict[str, Any], style: str) -> str:
     style_config = next((s for s in AVAILABLE_STYLES if s["id"] == style), AVAILABLE_STYLES[0])
     style_prompt = get_prompt(style_config["prompt_key"])
 
+    # 注入记忆上下文（如果有）
+    if memory_context:
+        return f"{base_prompt}\n\n{memory_context}\n\n{style_prompt}"
+    
     return f"{base_prompt}\n\n{style_prompt}"
 
 
@@ -80,6 +84,7 @@ async def chat_with_mind(
     mind: Dict[str, Any],
     message: str,
     history: List[Dict[str, str]],
+    user_id: int,
     model: str = "google_gemini_3_flash",
     style: str = "default"
 ) -> str:
@@ -91,14 +96,28 @@ async def chat_with_mind(
         mind: Mind 数据
         message: 用户消息
         history: 历史对话记录
+        user_id: 用户 ID（用于获取记忆）
         model: 模型 ID
         style: 对话风格
 
     Returns:
         AI 回复内容
     """
-    # 构建系统提示词（每次都重新构建，确保数据最新）
-    system_prompt = _build_system_prompt(mind, style)
+    # 获取晶体内容用于匹配记忆
+    cleaned_feeds = db.get_all_cleaned_feeds(mind_id)
+    crystal_content = "\n".join([
+        f.get('cleaned_content', '') for f in cleaned_feeds if f.get('cleaned_content')
+    ])
+    
+    # 匹配相关记忆并格式化
+    matched_memories = db.match_memories_by_content(user_id, crystal_content)
+    memory_context = db.format_matched_memories(matched_memories)
+    
+    if matched_memories:
+        logger.info(f"对话注入 {len(matched_memories)} 条相关记忆")
+
+    # 构建系统提示词（包含记忆上下文）
+    system_prompt = _build_system_prompt(mind, style, memory_context)
 
     # 构建消息列表
     messages = [{"role": "system", "content": system_prompt}]

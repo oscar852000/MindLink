@@ -272,7 +272,8 @@ async def generate_output(
     cleaned_feeds: List[Dict[str, Any]],
     instruction: str,
     mind_title: str,
-    structure: Optional[Dict[str, Any]] = None
+    structure: Optional[Dict[str, Any]] = None,
+    memory_context: str = ""
 ) -> str:
     """
     根据指令生成输出（基于去噪内容）
@@ -282,11 +283,16 @@ async def generate_output(
         instruction: 用户指令
         mind_title: Mind 标题
         structure: 结构信息（可选，用于参考）
+        memory_context: 匹配的记忆上下文（可选）
 
     Returns:
         生成的输出内容
     """
     system_prompt = get_prompt("expresser")
+    
+    # 如果有记忆上下文，追加到系统提示词
+    if memory_context:
+        system_prompt = system_prompt + "\n\n" + memory_context
 
     # 构建源材料（使用去噪后的内容）
     if cleaned_feeds:

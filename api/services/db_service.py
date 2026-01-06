@@ -742,6 +742,48 @@ class Database:
         
         return "\n".join(lines)
 
+    def match_memories_by_content(self, user_id: int, content: str) -> List[Dict[str, Any]]:
+        """
+        根据内容匹配相关记忆条目
+        扫描 content 中是否包含记忆库的 key 或 aliases，返回匹配的记忆
+        """
+        if not content:
+            return []
+        
+        memories = self.get_all_base_memory(user_id)
+        if not memories:
+            return []
+        
+        matched = []
+        content_lower = content.lower()
+        
+        for m in memories:
+            # 检查 key 是否在内容中
+            if m['key'].lower() in content_lower:
+                matched.append(m)
+                continue
+            
+            # 检查别名是否在内容中
+            for alias in m.get('aliases', []):
+                if alias.lower() in content_lower:
+                    matched.append(m)
+                    break
+        
+        return matched
+
+    def format_matched_memories(self, memories: List[Dict[str, Any]]) -> str:
+        """
+        格式化匹配的记忆为提示词注入格式
+        """
+        if not memories:
+            return ""
+        
+        lines = ["## 用户私有背景（仅供理解参考，不属于本晶体内容）"]
+        for m in memories:
+            lines.append(f"- **{m['key']}**: {m['definition']}")
+        
+        return "\n".join(lines)
+
     def get_base_memory_by_key(self, user_id: int, key: str) -> Optional[Dict[str, Any]]:
         """根据 key 获取单条记忆"""
         with self.get_connection() as conn:

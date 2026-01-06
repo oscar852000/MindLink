@@ -94,6 +94,7 @@ async def send_chat_message(mind_id: str, request: ChatRequest,
             mind=mind,
             message=request.message,
             history=history,
+            user_id=user["id"],
             model=request.model,
             style=request.style
         )

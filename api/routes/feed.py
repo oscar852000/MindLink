@@ -154,7 +154,7 @@ async def delete_feed(feed_id: str, user: Dict[str, Any] = Depends(get_current_u
 @router.post("/minds/{mind_id}/output", response_model=OutputResponse)
 async def generate_mind_output(mind_id: str, request: OutputRequest,
                                user: Dict[str, Any] = Depends(get_current_user_flexible)):
-    """根据指令生成输出（基于去噪内容）"""
+    """根据指令生成输出（基于去噪内容，注入相关记忆上下文）"""
     mind = db.get_mind(mind_id, user_id=user["id"])
     if not mind:
         raise HTTPException(status_code=404, detail="Mind not found")
@@ -168,11 +168,24 @@ async def generate_mind_output(mind_id: str, request: OutputRequest,
         )
 
     try:
+        # 构建晶体内容用于匹配记忆
+        crystal_content = "\n".join([
+            f.get('cleaned_content', '') for f in cleaned_feeds if f.get('cleaned_content')
+        ])
+        
+        # 匹配相关记忆并格式化
+        matched_memories = db.match_memories_by_content(user["id"], crystal_content)
+        memory_context = db.format_matched_memories(matched_memories)
+        
+        if matched_memories:
+            logger.info(f"输出注入 {len(matched_memories)} 条相关记忆")
+
         output = await generate_output(
             cleaned_feeds=cleaned_feeds,
             instruction=request.instruction,
             mind_title=mind["title"],
-            structure=mind.get("crystal")
+            structure=mind.get("crystal"),
+            memory_context=memory_context
         )
 
         # 记录输出
