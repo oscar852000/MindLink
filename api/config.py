@@ -30,6 +30,12 @@ AVAILABLE_MODELS = [
         "name": "GPT-5.2 柏拉图",
         "description": "最强推理能力",
         "thinking_level": None
+    },
+    {
+        "id": "plato_gpt_5_2_pro",
+        "name": "GPT-5.2 Pro",
+        "description": "专业版推理，深度分析",
+        "thinking_level": None
     }
 ]
 
