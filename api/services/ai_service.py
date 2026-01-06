@@ -320,6 +320,17 @@ async def generate_output(
 # Crystal 格式化（用于展示）
 # ============================================================
 
+def _ensure_list(value) -> list:
+    """确保值是列表，如果是字符串则转为单元素列表"""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        return [value] if value.strip() else []
+    return [str(value)]
+
+
 def format_crystal_markdown(crystal: Dict[str, Any]) -> str:
     """将 Crystal 格式化为 Markdown 结构视图"""
     if not crystal:
@@ -332,23 +343,27 @@ def format_crystal_markdown(crystal: Dict[str, Any]) -> str:
         sections.append(f"## 核心目标\n{crystal['core_goal']}")
 
     # 当前认知
-    if crystal.get("current_knowledge"):
-        items = "\n".join([f"- {k}" for k in crystal["current_knowledge"]])
+    knowledge = _ensure_list(crystal.get("current_knowledge"))
+    if knowledge:
+        items = "\n".join([f"- {k}" for k in knowledge])
         sections.append(f"## 当前认知\n{items}")
 
     # 亮点创意
-    if crystal.get("highlights"):
-        items = "\n".join([f"- {h}" for h in crystal["highlights"]])
+    highlights = _ensure_list(crystal.get("highlights"))
+    if highlights:
+        items = "\n".join([f"- {h}" for h in highlights])
         sections.append(f"## 亮点创意\n{items}")
 
     # 待定事项
-    if crystal.get("pending_notes"):
-        items = "\n".join([f"- {p}" for p in crystal["pending_notes"]])
+    pending = _ensure_list(crystal.get("pending_notes"))
+    if pending:
+        items = "\n".join([f"- {p}" for p in pending])
         sections.append(f"## 待定事项\n{items}")
 
     # 演变记录
-    if crystal.get("evolution"):
-        items = "\n".join([f"- {e}" for e in crystal["evolution"][-5:]])  # 只显示最近5条
+    evolution = _ensure_list(crystal.get("evolution"))
+    if evolution:
+        items = "\n".join([f"- {e}" for e in evolution[-5:]])  # 只显示最近5条
         sections.append(f"## 演变记录\n{items}")
 
     return "\n\n".join(sections) if sections else "还没有内容，先投喂一些想法吧"
