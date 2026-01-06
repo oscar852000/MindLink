@@ -185,6 +185,11 @@ class Database:
                 cursor.execute("UPDATE minds SET user_id = 1 WHERE user_id IS NULL")
                 logger.info("数据库迁移：已添加 user_id 字段，现有数据归属管理员")
 
+            # 检查并添加 minds.mindmap_cache 字段（思维导图缓存）
+            if 'mindmap_cache' not in columns:
+                cursor.execute("ALTER TABLE minds ADD COLUMN mindmap_cache TEXT")
+                logger.info("数据库迁移：已添加 mindmap_cache 字段")
+
             conn.commit()
             logger.info("数据库初始化完成")
 
@@ -243,6 +248,7 @@ class Database:
                 "crystal": json.loads(row["crystal_json"]) if row["crystal_json"] else None,
                 "summary": row["summary"],
                 "narrative": row["narrative"],
+                "mindmap_cache": row["mindmap_cache"] if "mindmap_cache" in row.keys() else None,
                 "created_at": row["created_at"],
                 "updated_at": row["updated_at"]
             }
@@ -529,15 +535,29 @@ class Database:
             return cursor.rowcount > 0
 
     def update_mind_narrative(self, mind_id: str, narrative: str) -> bool:
-        """更新 Mind 叙事"""
-        now = datetime.now().isoformat()
+        """更新 Mind 的叙事"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                UPDATE minds SET narrative = ?, updated_at = ? WHERE id = ?
-            """, (narrative, now, mind_id))
+                UPDATE minds
+                SET narrative = ?, updated_at = ?
+                WHERE id = ?
+            """, (narrative, datetime.now().isoformat(), mind_id))
             conn.commit()
             return cursor.rowcount > 0
+
+    def update_mind_mindmap(self, mind_id: str, mindmap_json: str) -> bool:
+        """更新 Mind 的思维导图缓存"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE minds
+                SET mindmap_cache = ?, updated_at = ?
+                WHERE id = ?
+            """, (mindmap_json, datetime.now().isoformat(), mind_id))
+            conn.commit()
+            return cursor.rowcount > 0
+
 
     def get_all_tags(self) -> List[Dict[str, Any]]:
         """获取全局标签库"""

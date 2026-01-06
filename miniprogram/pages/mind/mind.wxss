@@ -275,6 +275,14 @@
   padding: 8rpx 16rpx;
 }
 
+.mindmap-btn {
+  font-size: 24rpx;
+  color: #fff;
+  background: var(--accent-primary);
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+}
+
 .content-area {
   font-size: 30rpx;
   line-height: 1.8;

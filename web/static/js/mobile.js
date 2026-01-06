@@ -120,6 +120,25 @@ function setupEventListeners() {
     document.getElementById('sendChatBtn').addEventListener('click', sendChatMessage);
     document.getElementById('clearChatBtn').addEventListener('click', clearChat);
 
+    // 思维导图
+    const mindmapModal = document.getElementById('mindmapModal');
+    const mindmapFrame = document.getElementById('mindmapFrame');
+    document.getElementById('openMindmapBtn')?.addEventListener('click', () => {
+        if (!currentMindId) return;
+        mindmapFrame.src = `/mindmap?mind_id=${currentMindId}&t=${Date.now()}`;
+        mindmapModal.showModal();
+    });
+    document.getElementById('closeMindmapBtn')?.addEventListener('click', () => {
+        mindmapModal.close();
+        mindmapFrame.src = '';
+    });
+    mindmapModal?.addEventListener('click', (e) => {
+        if (e.target === mindmapModal) {
+            mindmapModal.close();
+            mindmapFrame.src = '';
+        }
+    });
+
     // 输入快捷键
     els.feedInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitFeed();
@@ -214,7 +233,8 @@ async function selectMind(mindId) {
         const mind = await response.json();
 
         els.mindTitle.textContent = mind.title;
-        document.getElementById('pageTitle').textContent = mind.title;
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.textContent = mind.title;
 
         if (mind.narrative) {
             els.narrativeContent.innerHTML = markdownToHtml(mind.narrative);

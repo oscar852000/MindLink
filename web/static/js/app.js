@@ -6,7 +6,7 @@
  * DOM：集中缓存在 dom 对象
  */
 
-const MindLinkApp = (function() {
+const MindLinkApp = (function () {
     'use strict';
 
     // ========== 配置 ==========
@@ -776,6 +776,51 @@ const MindLinkApp = (function() {
         return html;
     }
 
+    // ========== 思维导图模态框 ==========
+    function initMindmapModal() {
+        const openBtn = document.getElementById('openMindmapBtn');
+        const modal = document.getElementById('mindmapModal');
+        const closeBtn = document.getElementById('closeMindmapBtn');
+        const iframe = document.getElementById('mindmapFrame');
+
+        if (!openBtn || !modal || !closeBtn || !iframe) {
+            console.log('思维导图元素未找到');
+            return;
+        }
+
+        // 打开模态框
+        function openMindmap() {
+            console.log('打开思维导图');
+            const mindId = currentMindId || localStorage.getItem('currentMindId');
+            // 添加时间戳防止浏览器缓存
+            iframe.src = `/mindmap?mind_id=${mindId}&t=${Date.now()}`;
+            modal.showModal();
+        }
+
+        // 关闭模态框
+        function closeMindmap() {
+            console.log('关闭思维导图');
+            modal.close();
+            iframe.src = '';
+        }
+
+        // 绑定事件
+        openBtn.addEventListener('click', openMindmap);
+        closeBtn.addEventListener('click', closeMindmap);
+
+        // ESC键关闭
+        modal.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeMindmap();
+        });
+
+        // 点击遮罩层关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeMindmap();
+        });
+
+        console.log('思维导图模态框已初始化');
+    }
+
     // ========== 初始化 ==========
     function init() {
         cacheDOM();
@@ -783,6 +828,7 @@ const MindLinkApp = (function() {
         loadUserInfo();
         loadMinds();
         switchTab('feed');
+        initMindmapModal();
     }
 
     // 暴露公共接口
@@ -791,3 +837,4 @@ const MindLinkApp = (function() {
 
 // 启动应用
 document.addEventListener('DOMContentLoaded', MindLinkApp.init);
+

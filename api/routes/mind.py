@@ -1,6 +1,7 @@
 """
 Mind 路由 - 管理想法空间
 """
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
@@ -9,6 +10,8 @@ from datetime import datetime
 from api.services.db_service import db
 from api.services.ai_service import format_crystal_markdown
 from api.auth import get_current_user_flexible
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -184,3 +187,30 @@ async def get_timeline(mind_id: str, user: Dict[str, Any] = Depends(get_current_
             for e in events
         ]
     )
+
+
+@router.get("/{mind_id}/mindmap")
+async def get_mindmap(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
+    """获取Mind的思维导图（从缓存读取）"""
+    import json
+    logger.info(f"[Mindmap API] 请求 mind_id={mind_id}, user_id={user['id']}")
+
+    mind = db.get_mind(mind_id, user_id=user["id"])
+    if not mind:
+        logger.warning(f"[Mindmap API] Mind not found: {mind_id}")
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    mindmap_cache = mind.get("mindmap_cache")
+    logger.info(f"[Mindmap API] mindmap_cache 长度: {len(mindmap_cache) if mindmap_cache else 0}")
+
+    if mindmap_cache:
+        return json.loads(mindmap_cache)
+
+    # 如果缓存不存在，返回提示
+    logger.info(f"[Mindmap API] 无缓存，返回默认值")
+    return {
+        "name": mind.get("title", "未命名"),
+        "children": [
+            {"name": "请先生成叙事"}
+        ]
+    }

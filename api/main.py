@@ -141,6 +141,18 @@ async def memory_page(request: Request):
     return FileResponse(str(WEB_DIR / "memory.html"))
 
 
+@app.get("/mindmap_demo")
+async def mindmap_demo_page():
+    """思维导图演示页面（旧版）"""
+    return FileResponse(str(WEB_DIR / "mindmap_demo.html"))
+
+
+@app.get("/mindmap")
+async def mindmap_page():
+    """思维导图页面（新版 - 独立样式）"""
+    return FileResponse(str(WEB_DIR / "mindmap.html"))
+
+
 @app.get("/health")
 async def health():
     """健康检查"""

@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=20260106a">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260106b">
 </head>
 
 <body>
@@ -162,6 +162,18 @@
 
                     <!-- Structure Tab -->
                     <section id="structureTab" class="tab-pane">
+                        <div class="structure__toolbar">
+                            <button id="openMindmapBtn" class="btn btn--mindmap">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path
+                                        d="M12 1v6m0 6v6M5.6 5.6l4.2 4.2m4.2 4.2l4.2 4.2M1 12h6m6 0h6M5.6 18.4l4.2-4.2m4.2-4.2l4.2-4.2">
+                                    </path>
+                                </svg>
+                                <span>思维导图</span>
+                            </button>
+                        </div>
                         <div id="structureContent" class="structure__content"></div>
                     </section>
 
@@ -253,7 +265,21 @@
         </div>
     </dialog>
 
-    <script src="/static/js/app.js?v=20260106a"></script>
+    <!-- Mindmap Modal -->
+    <dialog id="mindmapModal" class="mindmap-modal">
+        <div class="mindmap-modal__overlay"></div>
+        <div class="mindmap-modal__container">
+            <button id="closeMindmapBtn" class="mindmap-modal__close" title="关闭 (ESC)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+            <iframe id="mindmapFrame" src="" class="mindmap-modal__iframe" frameborder="0"></iframe>
+        </div>
+    </dialog>
+
+    <script src="/static/js/app.js?v=20260106b"></script>
 </body>
 
 </html>

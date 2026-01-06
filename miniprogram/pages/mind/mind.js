@@ -60,6 +60,17 @@ Page({
     wx.navigateBack()
   },
 
+  openMindmap() {
+    const mindId = this.data.mindId
+    if (!mindId) {
+      wx.showToast({ title: '请先选择 Mind', icon: 'none' })
+      return
+    }
+    wx.navigateTo({
+      url: `/pages/mindmap/mindmap?mind_id=${mindId}`
+    })
+  },
+
   switchTab(e) {
     const tab = e.currentTarget.dataset.tab
     this.setData({ currentTab: tab })

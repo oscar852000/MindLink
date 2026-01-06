@@ -7,9 +7,11 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
+import json
 
 from api.services.db_service import db
 from api.services.ai_service import (
+    generate_mindmap_from_timeline,
     clean_and_update_structure,
     generate_output,
     generate_narrative_with_meta
@@ -322,6 +324,14 @@ async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(g
         
         if anchors_created or anchors_updated:
             logger.info(f"晶体底层记忆更新: 创建{anchors_created}条, 更新{anchors_updated}条")
+
+        # 生成思维导图
+        try:
+            mindmap = await generate_mindmap_from_timeline(feeds, mind["title"])
+            db.update_mind_mindmap(mind_id, json.dumps(mindmap, ensure_ascii=False))
+            logger.info(f"思维导图已生成")
+        except Exception as e:
+            logger.error(f"思维导图生成失败: {e}")
 
         return NarrativeResponse(
             narrative=result["narrative"],

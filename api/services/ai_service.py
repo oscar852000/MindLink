@@ -386,3 +386,44 @@ def format_crystal_markdown(crystal: Dict[str, Any]) -> str:
         sections.append(f"## 演变记录\n{items}")
 
     return "\n\n".join(sections) if sections else "还没有内容，先投喂一些想法吧"
+
+
+# ============================================================
+# 思维导图生成
+# ============================================================
+
+async def generate_mindmap_from_timeline(
+    cleaned_feeds: List[Dict[str, Any]],
+    mind_title: str
+) -> Dict[str, Any]:
+    """基于时间轴内容生成思维导图结构"""
+    if not cleaned_feeds:
+        return {"name": mind_title, "children": [{"name": "暂无内容"}]}
+
+    system_prompt = get_prompt("mindmap")
+    timeline_text = "\n\n".join([
+        f"【{f['created_at'][:10]}】\n{f['cleaned_content']}"
+        for f in cleaned_feeds
+    ])
+
+    user_prompt = f"""Mind标题：{mind_title}
+
+时间轴记录：
+{timeline_text}
+
+请整理为思维导图。"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+
+    try:
+        result = await call_ai(messages, thinking_level="medium", max_tokens=8000)
+        mindmap_data = _parse_json_response(result)
+        if "name" not in mindmap_data:
+            mindmap_data = {"name": mind_title, "children": [{"name": "生成失败"}]}
+        return mindmap_data
+    except Exception as e:
+        logger.error(f"生成思维导图失败: {e}")
+        return {"name": mind_title, "children": [{"name": "生成失败"}]}

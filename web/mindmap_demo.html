@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>思维导图 Demo - MindLink</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .header {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .controls button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .controls button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        #map {
+            width: 100%;
+            height: calc(100vh - 60px);
+            overflow: auto;
+            padding: 40px;
+        }
+
+        .mindmap-container {
+            display: inline-block;
+            min-width: 100%;
+        }
+
+        .node {
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .node-content {
+            display: inline-block;
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: #2c2c54;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .node-content:hover {
+            transform: translateX(5px);
+            border-color: #667eea;
+        }
+
+        .node-content.root {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-size: 18px;
+            font-weight: 600;
+            padding: 16px 28px;
+        }
+
+        .node-content.level-1 {
+            background: #e74c3c;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .node-content.level-1.blue {
+            background: #3498db;
+        }
+
+        .node-content.level-1.green {
+            background: #27ae60;
+        }
+
+        .node-content.level-1.orange {
+            background: #f39c12;
+        }
+
+        .node-children {
+            margin-left: 40px;
+            border-left: 2px solid #667eea;
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+
+        .node-children.collapsed {
+            display: none;
+        }
+
+        .toggle-icon {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .tips {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>🔮 思维导图 Demo</h1>
+        <div class="controls">
+            <button onclick="expandAll()">全部展开</button>
+            <button onclick="collapseAll()">全部收起</button>
+        </div>
+    </div>
+    <div id="map"></div>
+    <div class="tips">
+        💡 点击节点可展开/收起子节点
+    </div>
+
+    <script>
+        const mindData = {
+            id: 'root',
+            topic: '粒子星纬 产品规划',
+            children: [
+                {
+                    id: 'goal',
+                    topic: '🎯 核心目标',
+                    color: 'red',
+                    children: [
+                        { id: 'g1', topic: '让每一个想法都值得记载' },
+                        { id: 'g2', topic: '实现思维的体外有序化' }
+                    ]
+                },
+                {
+                    id: 'features',
+                    topic: '✨ 核心功能',
+                    color: 'blue',
+                    children: [
+                        {
+                            id: 'f1',
+                            topic: '投喂系统',
+                            children: [
+                                { id: 'f1a', topic: '语音输入' },
+                                { id: 'f1b', topic: '文字输入' },
+                                { id: 'f1c', topic: '去噪整理' }
+                            ]
+                        },
+                        {
+                            id: 'f2',
+                            topic: '晶体结构',
+                            children: [
+                                { id: 'f2a', topic: '核心目标' },
+                                { id: 'f2b', topic: '要点列表' },
+                                { id: 'f2c', topic: '灵感火花' }
+                            ]
+                        },
+                        {
+                            id: 'f3',
+                            topic: '底层记忆',
+                            children: [
+                                { id: 'f3a', topic: '跨晶体复用' },
+                                { id: 'f3b', topic: '自动检索注入' }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    id: 'platforms',
+                    topic: '📱 多端支持',
+                    color: 'green',
+                    children: [
+                        { id: 'p1', topic: 'PC 网页端' },
+                        { id: 'p2', topic: 'WAP 移动端' },
+                        { id: 'p3', topic: '微信小程序' }
+                    ]
+                },
+                {
+                    id: 'pending',
+                    topic: '⏳ 待办事项',
+                    color: 'orange',
+                    children: [
+                        { id: 'pd1', topic: '需确认思维导图的交互细节' },
+                        { id: 'pd2', topic: '需设计数字分身的隐私边界' }
+                    ]
+                }
+            ]
+        };
+
+        function renderNode(node, level = 0) {
+            const hasChildren = node.children && node.children.length > 0;
+            const colorClass = node.color ? node.color : '';
+            const levelClass = level === 0 ? 'root' : `level-${level}`;
+
+            let html = `<div class="node" data-id="${node.id}">`;
+            html += `<div class="node-content ${levelClass} ${colorClass}" onclick="toggleNode('${node.id}')">`;
+            html += node.topic;
+            if (hasChildren) {
+                html += `<span class="toggle-icon">▼</span>`;
+            }
+            html += `</div>`;
+
+            if (hasChildren) {
+                html += `<div class="node-children" id="children-${node.id}">`;
+                node.children.forEach(child => {
+                    html += renderNode(child, level + 1);
+                });
+                html += `</div>`;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function toggleNode(nodeId) {
+            const childrenEl = document.getElementById(`children-${nodeId}`);
+            if (childrenEl) {
+                childrenEl.classList.toggle('collapsed');
+            }
+        }
+
+        function expandAll() {
+            document.querySelectorAll('.node-children').forEach(el => {
+                el.classList.remove('collapsed');
+            });
+        }
+
+        function collapseAll() {
+            document.querySelectorAll('.node-children').forEach(el => {
+                el.classList.add('collapsed');
+            });
+        }
+
+        // 渲染思维导图
+        document.addEventListener('DOMContentLoaded', function () {
+            const mapEl = document.getElementById('map');
+            mapEl.innerHTML = `<div class="mindmap-container">${renderNode(mindData)}</div>`;
+        });
+    </script>
+</body>
+
+</html>

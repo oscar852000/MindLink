@@ -95,6 +95,7 @@
     <view class="tab-pane" wx:if="{{currentTab === 'structure'}}">
       <view class="section-header">
         <text class="section-label">CRYSTALLINE STRUCTURE</text>
+        <view class="mindmap-btn" bindtap="openMindmap">思维导图</view>
       </view>
       <view class="content-area">
         <rich-text nodes="{{structureHtml}}" wx:if="{{structureHtml}}"></rich-text>
