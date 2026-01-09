@@ -78,25 +78,47 @@
             xhr.open('POST', '/api/auth/login', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
             xhr.withCredentials = true;
+            xhr.timeout = 15000; // 15秒超时
 
             xhr.onload = function() {
                 if (xhr.status === 200) {
                     try {
                         var data = JSON.parse(xhr.responseText);
                         if (data.success) {
-                            window.location.href = '/';
+                            // 延迟跳转，确保 Cookie 写入完成
+                            setTimeout(function() {
+                                window.location.href = '/';
+                            }, 100);
                             return;
+                        } else {
+                            error.textContent = data.message || '登录失败';
+                            error.style.display = 'block';
                         }
-                    } catch(e) {}
+                    } catch(e) {
+                        console.error('解析响应失败:', e);
+                        error.textContent = '服务器响应异常';
+                        error.style.display = 'block';
+                    }
+                } else if (xhr.status === 401) {
+                    error.textContent = '用户名或密码错误';
+                    error.style.display = 'block';
+                } else {
+                    error.textContent = '服务器错误 (' + xhr.status + ')';
+                    error.style.display = 'block';
                 }
-                error.textContent = '用户名或密码错误';
-                error.style.display = 'block';
                 btn.disabled = false;
                 btn.textContent = '登录';
             };
 
             xhr.onerror = function() {
-                error.textContent = '网络错误';
+                error.textContent = '网络错误，请检查网络连接';
+                error.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '登录';
+            };
+
+            xhr.ontimeout = function() {
+                error.textContent = '请求超时，请重试';
                 error.style.display = 'block';
                 btn.disabled = false;
                 btn.textContent = '登录';

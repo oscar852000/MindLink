@@ -754,13 +754,16 @@ class Database:
         memories = self.get_all_base_memory(user_id)
         if not memories:
             return "（暂无记忆条目）"
-        
+
         lines = []
         for m in memories[:50]:  # 最多50条
             aliases_str = f"（别名：{', '.join(m['aliases'])}）" if m['aliases'] else ""
             lines.append(f"- {m['key']}{aliases_str}: {m['definition']}")
-        
-        return "\n".join(lines)
+
+        summary = "\n".join(lines)
+        return f"""以下是用户的全局记忆库，帮助你理解晶体中未详细说明的人名、项目、概念等背景。你可以自行决定是否需要整合这些信息。
+
+{summary}"""
 
     def match_memories_by_content(self, user_id: int, content: str) -> List[Dict[str, Any]]:
         """
@@ -797,12 +800,17 @@ class Database:
         """
         if not memories:
             return ""
-        
-        lines = ["## 用户私有背景（仅供理解参考，不属于本晶体内容）"]
+
+        lines = []
         for m in memories:
             lines.append(f"- **{m['key']}**: {m['definition']}")
-        
-        return "\n".join(lines)
+
+        memory_list = "\n".join(lines)
+        return f"""## 用户全局记忆库
+
+以下是用户的全局记忆，帮助你理解内容中提到但未详细说明的人名、项目、概念等背景。你可以自行决定是否需要整合这些信息。
+
+{memory_list}"""
 
     def get_base_memory_by_key(self, user_id: int, key: str) -> Optional[Dict[str, Any]]:
         """根据 key 获取单条记忆"""

@@ -1,23 +1,56 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+<svg width="200" height="200" viewBox="-20 -20 140 140" xmlns="http://www.w3.org/2000/svg">
   <defs>
+    <!-- 核心发光滤镜 -->
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="0.8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
+
+    <!-- 渐变色定义 -->
+    <linearGradient id="cyanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22d3ee;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:1" />
+    </linearGradient>
   </defs>
-  <!-- Row 1: positions 0, 1, 2 -->
-  <rect x="0" y="0" width="6" height="6" rx="1" fill="#00F5FF" filter="url(#glow)"/>
-  <rect x="9" y="0" width="6" height="6" rx="1" fill="rgba(255,255,255,0.1)"/>
-  <rect x="18" y="0" width="6" height="6" rx="1" fill="#00F5FF" filter="url(#glow)"/>
-  <!-- Row 2: positions 3, 4, 5 -->
-  <rect x="0" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.1)"/>
-  <rect x="9" y="9" width="6" height="6" rx="1" fill="#00F5FF" filter="url(#glow)"/>
-  <rect x="18" y="9" width="6" height="6" rx="1" fill="rgba(255,255,255,0.1)"/>
-  <!-- Row 3: positions 6, 7, 8 -->
-  <rect x="0" y="18" width="6" height="6" rx="1" fill="#00F5FF" filter="url(#glow)"/>
-  <rect x="9" y="18" width="6" height="6" rx="1" fill="rgba(255,255,255,0.1)"/>
-  <rect x="18" y="18" width="6" height="6" rx="1" fill="#00F5FF" filter="url(#glow)"/>
+
+  <!-- 背景参考网格 (可选，可删除) -->
+  <g opacity="0.05">
+    <circle cx="0" cy="0" r="1.5" fill="#fff" />
+    <circle cx="50" cy="0" r="1.5" fill="#fff" />
+    <circle cx="100" cy="0" r="1.5" fill="#fff" />
+    <circle cx="0" cy="50" r="1.5" fill="#fff" />
+    <circle cx="50" cy="50" r="1.5" fill="#fff" />
+    <circle cx="100" cy="50" r="1.5" fill="#fff" />
+    <circle cx="0" cy="100" r="1.5" fill="#fff" />
+    <circle cx="50" cy="100" r="1.5" fill="#fff" />
+    <circle cx="100" cy="100" r="1.5" fill="#fff" />
+  </g>
+
+  <!-- M 字星链路径 -->
+  <path
+    d="M 0 100 L 0 0 L 50 50 L 100 0 L 100 100"
+    fill="none"
+    stroke="url(#cyanGradient)"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.8"
+  />
+
+  <!-- 发光粒子节点 -->
+  <g fill="#22d3ee" filter="url(#glow)">
+    <circle cx="0" cy="100" r="5" />
+    <circle cx="0" cy="0" r="5" />
+    <circle cx="50" cy="50" r="9" />
+    <circle cx="100" cy="0" r="5" />
+    <circle cx="100" cy="100" r="5" />
+  </g>
+
+  <!-- 核心高亮圆点 (增加层级感) -->
+  <g fill="#fff">
+    <circle cx="0" cy="100" r="2" />
+    <circle cx="0" cy="0" r="2" />
+    <circle cx="100" cy="0" r="2" />
+    <circle cx="100" cy="100" r="2" />
+  </g>
 </svg>
