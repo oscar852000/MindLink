@@ -247,6 +247,17 @@
             </div>
 
             <div class="header-controls">
+                <!-- 更新导图按钮 -->
+                <button id="refreshBtn" onclick="handleRefresh()" title="更新导图" style="display: none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <polyline points="1 20 1 14 7 14"></polyline>
+                        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                    </svg>
+                </button>
+                <div class="divider" id="refreshDivider" style="display: none;"></div>
+                <!-- 缩放控制 -->
                 <button onclick="handleZoom('out')" title="缩小">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                         stroke-linejoin="round">
@@ -351,21 +362,67 @@
         let data = null;
         let zoomBehavior = null;
         let currentZoom = 100;
+        let currentMindId = null;  // 保存当前 mind_id
 
         // DOM 元素引用
         const svgElement = document.getElementById('mindmapSvg');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const mainContent = document.getElementById('mainContent');
         const zoomLevelEl = document.getElementById('zoomLevel');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const refreshDivider = document.getElementById('refreshDivider');
+
+        // 显示/隐藏更新按钮
+        function showRefreshButton(show) {
+            refreshBtn.style.display = show ? 'flex' : 'none';
+            refreshDivider.style.display = show ? 'block' : 'none';
+        }
+
+        // 生成思维导图（调用 POST API）
+        async function generateMindmap() {
+            if (!currentMindId) return;
+
+            loadingOverlay.style.display = 'flex';
+            showRefreshButton(false);
+
+            try {
+                const response = await fetch(`/api/minds/${currentMindId}/mindmap`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+
+                if (!response.ok) throw new Error('生成失败');
+
+                const mindmapData = await response.json();
+                data = mindmapData;
+                loadingOverlay.style.display = 'none';
+                showRefreshButton(true);
+                renderMindMap();
+            } catch (error) {
+                console.error('生成思维导图失败:', error);
+                data = {
+                    name: "生成失败",
+                    children: [{ "name": "请重试" }]
+                };
+                loadingOverlay.style.display = 'none';
+                showRefreshButton(true);
+                renderMindMap();
+            }
+        }
+
+        // 更新导图按钮点击
+        function handleRefresh() {
+            generateMindmap();
+        }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function () {
             // 从URL获取mind_id（如果有）
             const urlParams = new URLSearchParams(window.location.search);
-            const mindId = urlParams.get('mind_id') || localStorage.getItem('currentMindId');
-            console.log('[MindMap] mind_id:', mindId, 'URL:', window.location.href);
+            currentMindId = urlParams.get('mind_id') || localStorage.getItem('currentMindId');
+            console.log('[MindMap] mind_id:', currentMindId, 'URL:', window.location.href);
 
-            if (!mindId) {
+            if (!currentMindId) {
                 // 没有mind_id，显示提示
                 console.log('[MindMap] No mind_id, showing placeholder');
                 data = {
@@ -377,8 +434,8 @@
                 return;
             }
 
-            // 从API获取真实数据（禁用缓存）
-            fetch(`/api/minds/${mindId}/mindmap`, {
+            // 从API获取数据
+            fetch(`/api/minds/${currentMindId}/mindmap`, {
                 cache: 'no-store',
                 credentials: 'include'
             })
@@ -389,18 +446,29 @@
                 })
                 .then(mindmapData => {
                     console.log('[MindMap] API data:', JSON.stringify(mindmapData).substring(0, 200));
-                    data = mindmapData;
-                    loadingOverlay.style.display = 'none';
-                    renderMindMap();
+                    console.log('[MindMap] _has_cache:', mindmapData._has_cache);
+
+                    // 检查是否有缓存
+                    if (mindmapData._has_cache === false) {
+                        // 首次进入，没有缓存，自动生成
+                        console.log('[MindMap] 无缓存，自动生成...');
+                        generateMindmap();
+                    } else {
+                        // 有缓存，直接显示
+                        data = mindmapData;
+                        loadingOverlay.style.display = 'none';
+                        showRefreshButton(true);
+                        renderMindMap();
+                    }
                 })
                 .catch(error => {
                     console.error('获取思维导图失败:', error);
-                    // 失败时显示错误提示
                     data = {
                         name: "加载失败",
                         children: [{ "name": "请刷新重试" }]
                     };
                     loadingOverlay.style.display = 'none';
+                    showRefreshButton(true);
                     renderMindMap();
                 });
             // 添加拖拽样式切换

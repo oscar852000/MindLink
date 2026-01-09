@@ -1,6 +1,7 @@
 """
 Mind 路由 - 管理想法空间
 """
+import json
 import logging
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -8,7 +9,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 from api.services.db_service import db
-from api.services.ai_service import format_crystal_markdown
+from api.services.ai_service import format_crystal_markdown, generate_mindmap_from_timeline
 from api.auth import get_current_user_flexible
 
 logger = logging.getLogger(__name__)
@@ -192,7 +193,6 @@ async def get_timeline(mind_id: str, user: Dict[str, Any] = Depends(get_current_
 @router.get("/{mind_id}/mindmap")
 async def get_mindmap(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
     """获取Mind的思维导图（从缓存读取）"""
-    import json
     logger.info(f"[Mindmap API] 请求 mind_id={mind_id}, user_id={user['id']}")
 
     mind = db.get_mind(mind_id, user_id=user["id"])
@@ -204,13 +204,48 @@ async def get_mindmap(mind_id: str, user: Dict[str, Any] = Depends(get_current_u
     logger.info(f"[Mindmap API] mindmap_cache 长度: {len(mindmap_cache) if mindmap_cache else 0}")
 
     if mindmap_cache:
-        return json.loads(mindmap_cache)
+        mindmap_data = json.loads(mindmap_cache)
+        mindmap_data["_has_cache"] = True
+        return mindmap_data
 
-    # 如果缓存不存在，返回提示
+    # 如果缓存不存在，返回提示（标记无缓存）
     logger.info(f"[Mindmap API] 无缓存，返回默认值")
     return {
         "name": mind.get("title", "未命名"),
-        "children": [
-            {"name": "请先生成叙事"}
-        ]
+        "children": [],
+        "_has_cache": False
     }
+
+
+@router.post("/{mind_id}/mindmap")
+async def generate_mindmap(mind_id: str, user: Dict[str, Any] = Depends(get_current_user_flexible)):
+    """生成/更新Mind的思维导图"""
+    logger.info(f"[Mindmap Generate] 开始生成 mind_id={mind_id}")
+
+    mind = db.get_mind(mind_id, user_id=user["id"])
+    if not mind:
+        raise HTTPException(status_code=404, detail="Mind not found")
+
+    # 获取去噪后的内容
+    feeds = db.get_all_cleaned_feeds(mind_id)
+    if not feeds:
+        return {
+            "name": mind.get("title", "未命名"),
+            "children": [{"name": "暂无内容，请先投喂想法"}],
+            "_has_cache": False
+        }
+
+    try:
+        # 调用 AI 生成思维导图
+        mindmap_data = await generate_mindmap_from_timeline(feeds, mind["title"])
+
+        # 保存到缓存
+        db.update_mind_mindmap(mind_id, json.dumps(mindmap_data, ensure_ascii=False))
+        logger.info(f"[Mindmap Generate] 生成完成")
+
+        mindmap_data["_has_cache"] = True
+        return mindmap_data
+
+    except Exception as e:
+        logger.error(f"[Mindmap Generate] 生成失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
