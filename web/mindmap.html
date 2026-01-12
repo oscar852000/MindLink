@@ -207,6 +207,40 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
+        /* 移动端悬浮更新按钮 - 默认隐藏 */
+        .mobile-refresh-btn {
+            display: none;
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: #00D4DD;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 212, 221, 0.4);
+            cursor: pointer;
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .mobile-refresh-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0, 212, 221, 0.3);
+        }
+
+        .mobile-refresh-btn svg {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .mobile-refresh-btn.is-hidden {
+            display: none !important;
+        }
+
         /* 响应式 */
         @media (max-width: 768px) {
             .header-controls {
@@ -220,6 +254,11 @@
             .bottom-tips {
                 font-size: 11px;
                 padding: 8px 16px;
+            }
+
+            /* 移动端显示悬浮按钮 */
+            .mobile-refresh-btn {
+                display: flex;
             }
         }
 
@@ -296,6 +335,15 @@
             <svg id="mindmapSvg"></svg>
         </main>
 
+        <!-- 移动端悬浮更新按钮 -->
+        <button class="mobile-refresh-btn is-hidden" id="mobileRefreshBtn" onclick="handleRefresh()" title="更新导图">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+        </button>
+
         <!-- Bottom Tips -->
         <div class="bottom-tips">
             <div class="tip-item">
@@ -371,11 +419,18 @@
         const zoomLevelEl = document.getElementById('zoomLevel');
         const refreshBtn = document.getElementById('refreshBtn');
         const refreshDivider = document.getElementById('refreshDivider');
+        const mobileRefreshBtn = document.getElementById('mobileRefreshBtn');
 
         // 显示/隐藏更新按钮
         function showRefreshButton(show) {
             refreshBtn.style.display = show ? 'flex' : 'none';
             refreshDivider.style.display = show ? 'block' : 'none';
+            // 移动端悬浮按钮
+            if (show) {
+                mobileRefreshBtn.classList.remove('is-hidden');
+            } else {
+                mobileRefreshBtn.classList.add('is-hidden');
+            }
         }
 
         // 生成思维导图（调用 POST API）

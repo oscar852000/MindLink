@@ -12,6 +12,11 @@
     "navigationBarTextStyle": "white",
     "backgroundColor": "#0B0C0F"
   },
+  "permission": {
+    "scope.record": {
+      "desc": "用于语音输入功能"
+    }
+  },
   "style": "v2",
   "sitemapLocation": "sitemap.json"
 }

@@ -1,5 +1,8 @@
 const { api } = require('../../utils/api')
 
+// 录音管理器（全局）
+const recorderManager = wx.getRecorderManager()
+
 Page({
   data: {
     mindId: '',
@@ -9,6 +12,10 @@ Page({
     // 投喂
     feedContent: '',
     feedStatus: '',
+
+    // 语音
+    isRecording: false,
+    isProcessing: false,
 
     // 对话
     models: [
@@ -45,6 +52,21 @@ Page({
       this.setData({ mindId: options.id })
       this.loadMind()
     }
+
+    // 设置录音完成回调
+    recorderManager.onStop((res) => {
+      this.processVoiceRecording(res.tempFilePath)
+    })
+
+    recorderManager.onError((err) => {
+      console.error('录音错误:', err)
+      this.setData({
+        isRecording: false,
+        isProcessing: false,
+        feedStatus: '录音失败'
+      })
+      setTimeout(() => this.setData({ feedStatus: '' }), 2000)
+    })
   },
 
   async loadMind() {
@@ -103,6 +125,73 @@ Page({
     } catch (err) {
       this.setData({ feedStatus: '提交失败' })
     }
+  },
+
+  // ========== 语音输入 ==========
+  toggleVoice() {
+    if (this.data.isRecording) {
+      this.stopRecording()
+    } else {
+      this.startRecording()
+    }
+  },
+
+  startRecording() {
+    // 请求录音权限
+    wx.authorize({
+      scope: 'scope.record',
+      success: () => {
+        recorderManager.start({
+          duration: 60000,  // 最长 60 秒
+          sampleRate: 16000,
+          numberOfChannels: 1,
+          encodeBitRate: 48000,
+          format: 'mp3'
+        })
+        this.setData({
+          isRecording: true,
+          feedStatus: '录音中...点击停止'
+        })
+      },
+      fail: () => {
+        wx.showToast({ title: '需要录音权限', icon: 'none' })
+      }
+    })
+  },
+
+  stopRecording() {
+    recorderManager.stop()
+    this.setData({
+      isRecording: false,
+      isProcessing: true,
+      feedStatus: '识别中...'
+    })
+  },
+
+  async processVoiceRecording(filePath) {
+    try {
+      // 上传文件到后端转录
+      const text = await api.transcribeAudio(filePath)
+
+      if (text) {
+        // 追加到输入框
+        const currentText = this.data.feedContent.trim()
+        this.setData({
+          feedContent: currentText ? currentText + '\n' + text : text,
+          feedStatus: '识别完成',
+          isProcessing: false
+        })
+      } else {
+        throw new Error('识别结果为空')
+      }
+    } catch (err) {
+      console.error('转录错误:', err)
+      this.setData({
+        feedStatus: '识别失败',
+        isProcessing: false
+      })
+    }
+    setTimeout(() => this.setData({ feedStatus: '' }), 2000)
   },
 
   // ========== 对话 ==========

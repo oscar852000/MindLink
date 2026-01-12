@@ -2,7 +2,7 @@
 Feed 路由 - 投喂和输出
 """
 from collections import defaultdict
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -13,7 +13,9 @@ from api.services.db_service import db
 from api.services.ai_service import (
     clean_and_update_structure,
     generate_output,
-    generate_narrative_with_meta
+    generate_narrative_with_meta,
+    transcribe_audio,
+    transcribe_audio_gemini
 )
 from api.auth import get_current_user_flexible
 
@@ -335,4 +337,100 @@ async def generate_narrative_view(mind_id: str, user: Dict[str, Any] = Depends(g
 
     except Exception as e:
         logger.error(f"生成叙事视图失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# 语音转文字
+# ============================================================
+
+class TranscribeRequest(BaseModel):
+    """转录请求"""
+    audio_data: str  # base64 编码的音频数据
+    mime_type: str = "audio/webm"  # 音频格式
+    language: str = "yue"  # 语言代码：yue=粤语, zh=普通话, en=英语
+    model: str = "plato_gpt_4o_mini_transcribe"  # 转录模型（OpenAI 后端）
+    backend: str = "openai"  # 转录后端：openai 或 gemini
+
+
+class TranscribeResponse(BaseModel):
+    """转录响应"""
+    text: str
+    success: bool
+
+
+@router.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe_audio_endpoint(request: TranscribeRequest):
+    """
+    语音转文字接口
+
+    将音频转录为文字，支持粤语、普通话等多种语言。
+    支持两种后端：openai（AI Hub）和 gemini（直接调用）
+    """
+    import base64
+
+    try:
+        # 解码 base64 音频数据
+        audio_bytes = base64.b64decode(request.audio_data)
+
+        # 根据后端选择转录服务
+        if request.backend == "gemini":
+            text = await transcribe_audio_gemini(
+                audio_data=audio_bytes,
+                mime_type=request.mime_type,
+                language=request.language
+            )
+        else:
+            # 默认使用 OpenAI（通过 AI Hub）
+            text = await transcribe_audio(
+                audio_data=audio_bytes,
+                mime_type=request.mime_type,
+                language=request.language,
+                model=request.model
+            )
+
+        return TranscribeResponse(text=text, success=True)
+
+    except Exception as e:
+        logger.error(f"转录失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/transcribe-file", response_model=TranscribeResponse)
+async def transcribe_audio_file(
+    file: UploadFile = File(...),
+    language: str = Form("auto"),
+    backend: str = Form("gemini")
+):
+    """
+    语音转文字接口（文件上传版本，供小程序使用）
+
+    直接上传音频文件进行转录。
+    """
+    try:
+        # 读取上传的文件
+        audio_bytes = await file.read()
+
+        # 获取 mime_type
+        mime_type = file.content_type or "audio/mp3"
+
+        # 根据后端选择转录服务
+        if backend == "gemini":
+            text = await transcribe_audio_gemini(
+                audio_data=audio_bytes,
+                mime_type=mime_type,
+                language=language
+            )
+        else:
+            text = await transcribe_audio(
+                audio_data=audio_bytes,
+                mime_type=mime_type,
+                language=language,
+                model="plato_gpt_4o_mini_transcribe"
+            )
+
+        return TranscribeResponse(text=text, success=True)
+
+    except Exception as e:
+        logger.error(f"文件转录失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))

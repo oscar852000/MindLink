@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>语音转文字 - MindLink</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <style>
+        :root {
+            --bg-deep: #05050A;
+            --bg-surface: rgba(20, 20, 30, 0.6);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --accent-primary: #00F5FF;
+            --accent-secondary: #7B61FF;
+            --accent-error: #FF4444;
+            --accent-success: #10B981;
+            --accent-warning: #F59E0B;
+            --text-main: #FFFFFF;
+            --text-muted: #8F9BB3;
+            --border-subtle: rgba(255, 255, 255, 0.08);
+            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-main);
+            font-size: 15px;
+            line-height: 1.6;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background-image:
+                radial-gradient(circle at 10% 20%, rgba(123, 97, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.1) 0%, transparent 40%);
+        }
+
+        .container {
+            padding: calc(20px + var(--safe-area-top)) 20px calc(20px + var(--safe-area-bottom));
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 6px;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .status-box {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .status-label {
+            color: var(--text-muted);
+        }
+
+        .status-value {
+            font-weight: 500;
+        }
+
+        .status-value.recording {
+            color: var(--accent-error);
+            animation: pulse 1s infinite;
+        }
+
+        .status-value.processing {
+            color: var(--accent-warning);
+        }
+
+        .status-value.ready {
+            color: var(--accent-success);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .message-box {
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .message-box.show {
+            display: block;
+        }
+
+        .message-box.error {
+            background: rgba(255, 68, 68, 0.1);
+            border: 1px solid var(--accent-error);
+            color: var(--accent-error);
+        }
+
+        .message-box.info {
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        .mic-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 0;
+            min-height: 180px;
+        }
+
+        .mic-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.2), rgba(123, 97, 255, 0.2));
+            border: 2px solid var(--accent-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .mic-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .mic-btn.recording {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.4), rgba(255, 100, 100, 0.4));
+            border-color: var(--accent-error);
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.4);
+            animation: pulse-btn 1s infinite;
+        }
+
+        @keyframes pulse-btn {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .mic-btn svg {
+            width: 40px;
+            height: 40px;
+            fill: var(--accent-primary);
+            transition: fill 0.3s;
+        }
+
+        .mic-btn.recording svg {
+            fill: var(--accent-error);
+        }
+
+        .mic-hint {
+            margin-top: 16px;
+            color: var(--text-muted);
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--accent-error);
+            margin-top: 12px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .result-section {
+            margin-top: auto;
+        }
+
+        .result-label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .result-box {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            padding: 16px;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .result-text {
+            font-size: 16px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .result-placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn.primary {
+            background: var(--accent-primary);
+            color: #000;
+        }
+
+        .action-btn.secondary {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .tips {
+            margin-top: 20px;
+            padding: 12px 16px;
+            background: var(--bg-glass);
+            border-radius: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .tips h3 {
+            font-size: 13px;
+            color: var(--text-main);
+            margin: 0 0 6px;
+        }
+
+        .tips ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .tips li {
+            margin-bottom: 3px;
+        }
+
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid var(--border-subtle);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 选项框 */
+        .options-box {
+            background: var(--bg-surface);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-subtle);
+        }
+
+        .option-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+
+        .option-row + .option-row {
+            margin-top: 10px;
+        }
+
+        .option-row label {
+            color: var(--text-muted);
+        }
+
+        .option-row select {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 6px 12px;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .option-row select:focus {
+            border-color: var(--accent-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>语音转文字</h1>
+            <p>AI Hub 转录，支持粤语</p>
+        </div>
+
+        <div class="status-box">
+            <div class="status-row">
+                <span class="status-label">状态</span>
+                <span class="status-value ready" id="statusValue">准备就绪</span>
+            </div>
+        </div>
+
+        <!-- 语言和模型选择 -->
+        <div class="options-box">
+            <div class="option-row">
+                <label>语言</label>
+                <select id="langSelect">
+                    <option value="yue" selected>粤语</option>
+                    <option value="zh">普通话</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="option-row">
+                <label>后端</label>
+                <select id="backendSelect">
+                    <option value="gemini" selected>Gemini (推荐粤语)</option>
+                    <option value="openai">OpenAI</option>
+                </select>
+            </div>
+            <div class="option-row" id="modelRow">
+                <label>模型</label>
+                <select id="modelSelect">
+                    <option value="plato_gpt_4o_mini_transcribe" selected>GPT-4o Mini (快速)</option>
+                    <option value="plato_gpt_4o_transcribe">GPT-4o (高质量)</option>
+                    <option value="plato_whisper_1">Whisper-1 (基础)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="message-box" id="messageBox"></div>
+
+        <div class="mic-section">
+            <button class="mic-btn" id="micBtn">
+                <svg viewBox="0 0 24 24" id="micIcon">
+                    <path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/>
+                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    <line x1="8" y1="23" x2="16" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <p class="mic-hint" id="micHint">点击开始录音</p>
+            <div class="timer" id="timer" style="display: none;">00:00</div>
+        </div>
+
+        <div class="result-section">
+            <div class="result-label">
+                <span>转录结果</span>
+                <span id="resultTime"></span>
+            </div>
+            <div class="result-box">
+                <div class="result-text" id="resultText">
+                    <span class="result-placeholder">录音后自动转录...</span>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="action-btn secondary" id="clearBtn">清空</button>
+                <button class="action-btn primary" id="copyBtn">复制文字</button>
+            </div>
+        </div>
+
+        <div class="tips">
+            <h3>使用说明</h3>
+            <ul>
+                <li>点击麦克风开始录音</li>
+                <li>再次点击停止并转录</li>
+                <li>支持粤语、普通话、英语</li>
+                <li>录音时长建议 2-30 秒</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // ========== 状态 ==========
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let timerInterval = null;
+        let recordingStartTime = null;
+        let transcriptText = '';
+        let currentMimeType = 'audio/webm';
+        let currentFileExt = 'webm';
+
+        // ========== DOM ==========
+        const statusValue = document.getElementById('statusValue');
+        const messageBox = document.getElementById('messageBox');
+        const micBtn = document.getElementById('micBtn');
+        const micHint = document.getElementById('micHint');
+        const timer = document.getElementById('timer');
+        const resultText = document.getElementById('resultText');
+        const resultTime = document.getElementById('resultTime');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const langSelect = document.getElementById('langSelect');
+        const modelSelect = document.getElementById('modelSelect');
+        const backendSelect = document.getElementById('backendSelect');
+        const modelRow = document.getElementById('modelRow');
+
+        // 后端切换时显示/隐藏模型选择
+        backendSelect.addEventListener('change', () => {
+            modelRow.style.display = backendSelect.value === 'openai' ? 'flex' : 'none';
+        });
+        // 初始化：Gemini 默认选中，隐藏模型选择
+        modelRow.style.display = 'none';
+
+        // ========== 消息 ==========
+        function showMessage(msg, type = 'info') {
+            messageBox.textContent = msg;
+            messageBox.className = `message-box show ${type}`;
+        }
+
+        function hideMessage() {
+            messageBox.className = 'message-box';
+        }
+
+        function setStatus(text, className) {
+            statusValue.textContent = text;
+            statusValue.className = `status-value ${className}`;
+        }
+
+        // ========== 计时器 ==========
+        function startTimer() {
+            recordingStartTime = Date.now();
+            timer.style.display = 'block';
+            timer.textContent = '00:00';
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
+                const secs = String(elapsed % 60).padStart(2, '0');
+                timer.textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // ========== 录音 ==========
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true
+                    }
+                });
+
+                // 尝试使用 OpenAI 支持的格式（优先 mp4/m4a）
+                let mimeType = 'audio/webm';
+                let fileExt = 'webm';
+
+                // 按优先级尝试不同格式
+                const formats = [
+                    { mime: 'audio/mp4', ext: 'mp4' },
+                    { mime: 'audio/mpeg', ext: 'mp3' },
+                    { mime: 'audio/wav', ext: 'wav' },
+                    { mime: 'audio/webm;codecs=opus', ext: 'webm' },
+                    { mime: 'audio/webm', ext: 'webm' }
+                ];
+
+                for (const fmt of formats) {
+                    if (MediaRecorder.isTypeSupported(fmt.mime)) {
+                        mimeType = fmt.mime;
+                        fileExt = fmt.ext;
+                        console.log('使用格式:', mimeType);
+                        break;
+                    }
+                }
+
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
+                audioChunks = [];
+                currentMimeType = mimeType;
+                currentFileExt = fileExt;
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        audioChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(track => track.stop());
+                    await processRecording();
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micHint.textContent = '点击停止录音';
+                setStatus('录音中...', 'recording');
+                startTimer();
+                hideMessage();
+
+            } catch (e) {
+                console.error('录音失败:', e);
+                showMessage('无法访问麦克风: ' + e.message, 'error');
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                micBtn.classList.remove('recording');
+                micHint.textContent = '处理中...';
+                setStatus('转录中...', 'processing');
+                stopTimer();
+            }
+        }
+
+        async function processRecording() {
+            if (audioChunks.length === 0) {
+                showMessage('没有录到音频', 'error');
+                resetUI();
+                return;
+            }
+
+            const audioBlob = new Blob(audioChunks, { type: currentMimeType });
+            console.log('音频大小:', audioBlob.size, 'bytes, 格式:', currentMimeType);
+
+            // 转换为 base64
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+                const base64Data = reader.result.split(',')[1];
+
+                try {
+                    // 调用后端 API
+                    const response = await fetch('/api/transcribe', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            audio_data: base64Data,
+                            mime_type: currentMimeType.split(';')[0],  // 去掉 codecs 部分
+                            language: langSelect.value,
+                            model: modelSelect.value,
+                            backend: backendSelect.value
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        transcriptText = data.text;
+                        resultText.textContent = transcriptText;
+                        resultTime.textContent = new Date().toLocaleTimeString();
+                        setStatus('转录完成', 'ready');
+                    } else {
+                        throw new Error(data.detail || '转录失败');
+                    }
+
+                } catch (e) {
+                    console.error('转录错误:', e);
+                    showMessage('转录失败: ' + e.message, 'error');
+                    setStatus('转录失败', 'error');
+                }
+
+                resetUI();
+            };
+
+            reader.readAsDataURL(audioBlob);
+        }
+
+        function resetUI() {
+            micBtn.disabled = false;
+            micHint.textContent = '点击开始录音';
+            timer.style.display = 'none';
+        }
+
+        // ========== 事件 ==========
+        micBtn.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            transcriptText = '';
+            resultText.innerHTML = '<span class="result-placeholder">录音后自动转录...</span>';
+            resultTime.textContent = '';
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            if (!transcriptText) {
+                showMessage('没有可复制的内容', 'error');
+                setTimeout(hideMessage, 2000);
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(transcriptText);
+                copyBtn.textContent = '已复制!';
+                setTimeout(() => {
+                    copyBtn.textContent = '复制文字';
+                }, 1500);
+            } catch (e) {
+                showMessage('复制失败', 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

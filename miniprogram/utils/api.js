@@ -92,7 +92,45 @@ const api = {
   updateFeed: (feedId, content) => request(`/feeds/${feedId}`, 'PUT', { content }),
 
   // 删除 Feed
-  deleteFeed: (feedId) => request(`/feeds/${feedId}`, 'DELETE')
+  deleteFeed: (feedId) => request(`/feeds/${feedId}`, 'DELETE'),
+
+  // 语音转文字（上传音频文件）
+  transcribeAudio: (filePath) => {
+    return new Promise((resolve, reject) => {
+      const header = {}
+      if (app.globalData.token) {
+        header['Authorization'] = `Bearer ${app.globalData.token}`
+      }
+
+      wx.uploadFile({
+        url: `${app.globalData.baseUrl}/transcribe-file`,
+        filePath: filePath,
+        name: 'file',
+        formData: {
+          language: 'auto',
+          backend: 'gemini'
+        },
+        header,
+        success: (res) => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            try {
+              const data = JSON.parse(res.data)
+              if (data.success && data.text) {
+                resolve(data.text)
+              } else {
+                reject(new Error(data.detail || '转录失败'))
+              }
+            } catch (e) {
+              reject(new Error('解析响应失败'))
+            }
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}`))
+          }
+        },
+        fail: reject
+      })
+    })
+  }
 }
 
 module.exports = { api, auth }

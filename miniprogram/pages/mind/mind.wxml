@@ -37,16 +37,21 @@
   >
     <!-- 投喂 Tab -->
     <view class="tab-pane" wx:if="{{currentTab === 'feed'}}">
-      <textarea
-        class="feed-input"
-        style="color: #fff;"
-        placeholder="输入零散的想法、灵感或事实..."
-        placeholder-class="placeholder"
-        value="{{feedContent}}"
-        bindinput="onFeedInput"
-        maxlength="-1"
-        auto-height
-      />
+      <view class="feed-input-wrapper">
+        <textarea
+          class="feed-input"
+          style="color: #fff;"
+          placeholder="输入零散的想法、灵感或事实..."
+          placeholder-class="placeholder"
+          value="{{feedContent}}"
+          bindinput="onFeedInput"
+          maxlength="-1"
+          auto-height
+        />
+        <view class="voice-btn {{isRecording ? 'recording' : ''}} {{isProcessing ? 'processing' : ''}}" bindtap="toggleVoice">
+          <text class="voice-icon">🎤</text>
+        </view>
+      </view>
       <view class="btn-primary feed-btn" bindtap="submitFeed">
         注入晶体 (Feed)
       </view>

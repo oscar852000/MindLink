@@ -432,3 +432,52 @@
   font-size: 20rpx;
   font-weight: 500;
 }
+
+/* ====== 语音输入 ====== */
+.feed-input-wrapper {
+  display: flex;
+  gap: 20rpx;
+  align-items: flex-start;
+}
+
+.feed-input-wrapper .feed-input {
+  flex: 1;
+}
+
+.voice-btn {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2rpx solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.voice-btn:active {
+  background: rgba(0, 245, 255, 0.1);
+  transform: scale(0.95);
+}
+
+.voice-btn.recording {
+  background: rgba(255, 68, 68, 0.2);
+  border-color: #FF4444;
+  animation: voice-pulse 1s infinite;
+}
+
+.voice-btn.processing {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #F59E0B;
+}
+
+.voice-icon {
+  font-size: 40rpx;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}

@@ -6,6 +6,9 @@ import os
 # ========== AI Hub 配置 ==========
 AI_HUB_URL = os.getenv("AI_HUB_URL", "http://localhost:8000")
 
+# ========== Gemini API 配置（用于语音转录）==========
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyAW-lyviRaufhXCq726rCrZSU7zBErUUGw")
+
 # ========== 微信小程序配置 ==========
 WX_APPID = os.getenv("WX_APPID", "wx2d43422415590d2c")
 WX_APPSECRET = os.getenv("WX_APPSECRET", "84e7839f85195486e90c1fe416bab35f")

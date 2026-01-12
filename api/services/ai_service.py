@@ -9,7 +9,7 @@ import json
 import logging
 from typing import Optional, List, Dict, Any, Tuple
 
-from api.config import AI_HUB_URL, DEFAULT_MODEL, CRYSTAL_TEMPLATE
+from api.config import AI_HUB_URL, DEFAULT_MODEL, CRYSTAL_TEMPLATE, GEMINI_API_KEY
 from api.prompts import get_prompt
 
 logger = logging.getLogger(__name__)
@@ -427,3 +427,205 @@ async def generate_mindmap_from_timeline(
     except Exception as e:
         logger.error(f"生成思维导图失败: {e}")
         return {"name": mind_title, "children": [{"name": "生成失败"}]}
+
+
+# ============================================================
+# 语音转文字
+# ============================================================
+
+async def _convert_webm_to_mp3(audio_data: bytes) -> bytes:
+    """使用 ffmpeg 将音频转换为 mp3"""
+    import subprocess
+    import tempfile
+    import os
+
+    # 使用通用后缀，ffmpeg 会自动检测格式
+    with tempfile.NamedTemporaryFile(suffix='.input', delete=False) as input_file:
+        input_file.write(audio_data)
+        input_path = input_file.name
+
+    mp3_path = input_path.replace('.input', '.mp3')
+
+    try:
+        # 使用 ffmpeg 转换（使用绝对路径）
+        result = subprocess.run([
+            '/usr/bin/ffmpeg', '-y', '-i', input_path,
+            '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1',
+            mp3_path
+        ], capture_output=True, timeout=30)
+
+        if result.returncode != 0:
+            logger.error(f"ffmpeg 转换失败: {result.stderr.decode()}")
+            raise Exception("音频格式转换失败")
+
+        with open(mp3_path, 'rb') as f:
+            mp3_data = f.read()
+
+        return mp3_data
+    finally:
+        # 清理临时文件
+        if os.path.exists(input_path):
+            os.remove(input_path)
+        if os.path.exists(mp3_path):
+            os.remove(mp3_path)
+
+
+async def transcribe_audio(
+    audio_data: bytes,
+    mime_type: str = "audio/webm",
+    language: str = "yue",
+    model: str = "plato_gpt_4o_mini_transcribe"
+) -> str:
+    """
+    使用 AI Hub 转录音频
+
+    Args:
+        audio_data: 音频二进制数据
+        mime_type: 音频格式
+        language: 语言代码（yue=粤语, zh=普通话, en=英语）
+        model: 转录模型 ID
+
+    Returns:
+        转录的文字
+    """
+    import io
+
+    # 需要转换的格式（OpenAI API 对这些格式支持不稳定）
+    need_convert = (
+        "audio/webm", "audio/webm;codecs=opus",
+        "audio/mp4", "audio/m4a", "audio/ogg"
+    )
+
+    if mime_type in need_convert:
+        logger.info(f"转换 {mime_type} → mp3")
+        audio_data = await _convert_webm_to_mp3(audio_data)
+        mime_type = "audio/mp3"
+
+    # 根据 mime_type 确定文件扩展名
+    ext_map = {
+        "audio/webm": "webm",
+        "audio/wav": "wav",
+        "audio/mp3": "mp3",
+        "audio/mpeg": "mp3",
+        "audio/ogg": "ogg",
+        "audio/flac": "flac",
+    }
+    ext = ext_map.get(mime_type, "mp3")
+    filename = f"audio.{ext}"
+
+    # 调用 AI Hub 转录 API
+    url = f"{AI_HUB_URL}/run/transcribe/{model}"
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            # 使用 multipart/form-data 上传
+            files = {"file": (filename, io.BytesIO(audio_data), mime_type)}
+            data = {"language": language}
+
+            response = await client.post(url, files=files, data=data)
+
+            if response.status_code != 200:
+                logger.error(f"AI Hub 转录错误: {response.status_code} - {response.text}")
+                raise Exception(f"转录失败: {response.status_code}")
+
+            result = response.json()
+
+            # 提取文字
+            text = result.get("text", "").strip()
+            if not text:
+                raise Exception("转录结果为空")
+
+            logger.info(f"音频转录成功 [{model}]: {text[:100]}...")
+            return text
+
+    except httpx.TimeoutException:
+        raise Exception("转录超时，请重试")
+    except Exception as e:
+        logger.error(f"音频转录失败: {e}")
+        raise Exception(f"转录失败: {str(e)}")
+
+
+# ============================================================
+# Gemini 语音转文字
+# ============================================================
+
+async def transcribe_audio_gemini(
+    audio_data: bytes,
+    mime_type: str = "audio/webm",
+    language: str = "yue"
+) -> str:
+    """
+    使用 Gemini API 转录音频
+
+    Args:
+        audio_data: 音频二进制数据
+        mime_type: 音频格式
+        language: 语言代码（yue=粤语, zh=普通话, en=英语）
+
+    Returns:
+        转录的文字
+    """
+    import base64
+
+    # 语言提示
+    lang_hints = {
+        "yue": "粤语/广东话",
+        "zh": "普通话/中文",
+        "en": "English"
+    }
+    lang_hint = lang_hints.get(language, "粤语")
+
+    # Base64 编码音频
+    audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+
+    # 构建请求
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_API_KEY}"
+
+    payload = {
+        "contents": [{
+            "parts": [
+                {
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": audio_base64
+                    }
+                },
+                {
+                    "text": f"请将这段音频转录为文字。语言是{lang_hint}。只输出转录的文字内容，不要添加任何解释或标点符号修正。"
+                }
+            ]
+        }],
+        "generationConfig": {
+            "temperature": 0.1,
+            "maxOutputTokens": 2048
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(url, json=payload)
+
+            if response.status_code != 200:
+                logger.error(f"Gemini 转录错误: {response.status_code} - {response.text}")
+                raise Exception(f"Gemini API 错误: {response.status_code}")
+
+            result = response.json()
+
+            # 提取文字
+            candidates = result.get("candidates", [])
+            if candidates:
+                content = candidates[0].get("content", {})
+                parts = content.get("parts", [])
+                if parts:
+                    text = parts[0].get("text", "").strip()
+                    if text:
+                        logger.info(f"Gemini 转录成功: {text[:100]}...")
+                        return text
+
+            raise Exception("Gemini 转录结果为空")
+
+    except httpx.TimeoutException:
+        raise Exception("Gemini 转录超时，请重试")
+    except Exception as e:
+        logger.error(f"Gemini 转录失败: {e}")
+        raise Exception(f"Gemini 转录失败: {str(e)}")

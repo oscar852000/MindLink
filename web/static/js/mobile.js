@@ -17,6 +17,11 @@
 const API_BASE = '/api';
 let currentMindId = null;
 
+// ==================== 语音输入状态 ====================
+let voiceRecorder = null;
+let voiceChunks = [];
+let isVoiceRecording = false;
+
 // ==================== DOM 元素引用 ====================
 const els = {
     mindList: document.getElementById('mindList'),
@@ -25,6 +30,7 @@ const els = {
     mindTitle: document.getElementById('mindTitle'),
     feedInput: document.getElementById('feedInput'),
     feedStatus: document.getElementById('feedStatus'),
+    voiceBtn: document.getElementById('voiceBtn'),
     timelineContent: document.getElementById('timelineContent'),
     narrativeContent: document.getElementById('narrativeContent'),
     structureContent: document.getElementById('structureContent'),
@@ -143,6 +149,11 @@ function setupEventListeners() {
     els.feedInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitFeed();
     });
+
+    // 语音输入
+    if (els.voiceBtn) {
+        els.voiceBtn.addEventListener('click', toggleVoiceRecording);
+    }
 
     // 移动端对话输入：不使用 Enter 发送，只用按钮发送
     // 因为移动端没有 Shift 键，用户无法区分"换行"和"发送"
@@ -769,4 +780,135 @@ function markdownToHtml(md) {
         .replace(/^- (.+)$/gm, '<li>$1</li>')
         .replace(/\n\n/g, '<br><br>')
         .replace(/\n/g, '<br>');
+}
+
+// ==================== 语音输入 ====================
+
+/**
+ * 切换语音录制状态
+ */
+async function toggleVoiceRecording() {
+    if (isVoiceRecording) {
+        stopVoiceRecording();
+    } else {
+        await startVoiceRecording();
+    }
+}
+
+/**
+ * 开始录音
+ */
+async function startVoiceRecording() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                channelCount: 1,
+                sampleRate: 16000,
+                echoCancellation: true,
+                noiseSuppression: true
+            }
+        });
+
+        // 检测支持的格式
+        let mimeType = 'audio/webm';
+        const formats = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'];
+        for (const fmt of formats) {
+            if (MediaRecorder.isTypeSupported(fmt)) {
+                mimeType = fmt;
+                break;
+            }
+        }
+
+        voiceRecorder = new MediaRecorder(stream, { mimeType });
+        voiceChunks = [];
+
+        voiceRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) voiceChunks.push(e.data);
+        };
+
+        voiceRecorder.onstop = async () => {
+            stream.getTracks().forEach(track => track.stop());
+            await processVoiceRecording(mimeType);
+        };
+
+        voiceRecorder.start();
+        isVoiceRecording = true;
+        els.voiceBtn.classList.add('recording');
+        els.feedStatus.textContent = '录音中...点击停止';
+
+    } catch (e) {
+        console.error('录音失败:', e);
+        els.feedStatus.textContent = '无法访问麦克风';
+        setTimeout(() => els.feedStatus.textContent = '', 3000);
+    }
+}
+
+/**
+ * 停止录音
+ */
+function stopVoiceRecording() {
+    if (voiceRecorder && isVoiceRecording) {
+        voiceRecorder.stop();
+        isVoiceRecording = false;
+        els.voiceBtn.classList.remove('recording');
+        els.voiceBtn.classList.add('processing');
+        els.feedStatus.textContent = '识别中...';
+    }
+}
+
+/**
+ * 处理录音并转录
+ */
+async function processVoiceRecording(mimeType) {
+    if (voiceChunks.length === 0) {
+        els.voiceBtn.classList.remove('processing');
+        els.feedStatus.textContent = '录音为空';
+        setTimeout(() => els.feedStatus.textContent = '', 2000);
+        return;
+    }
+
+    const audioBlob = new Blob(voiceChunks, { type: mimeType });
+
+    // 转换为 base64
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+        const base64Data = reader.result.split(',')[1];
+
+        try {
+            const response = await fetch(`${API_BASE}/transcribe`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    audio_data: base64Data,
+                    mime_type: mimeType.split(';')[0],
+                    language: 'auto',  // 自动检测语言
+                    backend: 'gemini'  // 使用 Gemini
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success && data.text) {
+                // 追加到输入框（不覆盖现有内容）
+                const currentText = els.feedInput.value.trim();
+                els.feedInput.value = currentText
+                    ? currentText + '\n' + data.text
+                    : data.text;
+                els.feedStatus.textContent = '识别完成';
+                // 触发 input 事件以调整高度
+                els.feedInput.dispatchEvent(new Event('input'));
+            } else {
+                throw new Error(data.detail || '识别失败');
+            }
+
+        } catch (e) {
+            console.error('转录错误:', e);
+            els.feedStatus.textContent = '识别失败';
+        }
+
+        els.voiceBtn.classList.remove('processing');
+        setTimeout(() => els.feedStatus.textContent = '', 2000);
+    };
+
+    reader.readAsDataURL(audioBlob);
 }

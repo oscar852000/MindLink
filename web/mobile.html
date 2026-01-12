@@ -7,7 +7,7 @@
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>MindLink - Crystal System</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/static/css/mobile.css?v=20260112b">
+    <link rel="stylesheet" href="/static/css/mobile.css?v=20260112c">
 </head>
 
 <body>
@@ -76,7 +76,16 @@
                 <div data-logic-id="tab-content">
                     <!-- Feed: 投喂 -->
                     <section id="feedTab" data-logic-id="tab-feed" class="active">
-                        <textarea id="feedInput" data-logic-id="feed-input" placeholder="输入零散的想法、灵感或事实..."></textarea>
+                        <div class="feed-input-wrapper">
+                            <textarea id="feedInput" data-logic-id="feed-input" placeholder="输入零散的想法、灵感或事实..."></textarea>
+                            <button id="voiceBtn" class="voice-btn" title="语音输入">
+                                <svg viewBox="0 0 24 24" class="mic-icon">
+                                    <path d="M12 1a4 4 0 0 0-4 4v7a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4z"/>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
                         <button id="feedBtn" data-logic-id="feed-submit-button">注入晶体 (Feed)</button>
                         <div id="feedStatus" data-logic-id="feed-status"></div>
                     </section>
@@ -219,7 +228,7 @@
     </dialog>
 
     <!-- JS: 业务逻辑 -->
-    <script src="/static/js/mobile.js?v=20260112b"></script>
+    <script src="/static/js/mobile.js?v=20260112c"></script>
 </body>
 
 </html>

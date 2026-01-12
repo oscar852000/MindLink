@@ -159,6 +159,12 @@ async def chat_demo_page():
     return FileResponse(str(WEB_DIR / "chat-demo.html"))
 
 
+@app.get("/voice-demo")
+async def voice_demo_page():
+    """语音转文字测试页面"""
+    return FileResponse(str(WEB_DIR / "voice-demo.html"))
+
+
 @app.get("/health")
 async def health():
     """健康检查"""
