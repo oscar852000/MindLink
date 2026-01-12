@@ -768,78 +768,100 @@ body {
 .chat__controls {
     padding: 16px 0;
     display: flex;
-    gap: 16px;
+    gap: 12px;
     background: transparent;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .chat__select {
-    background: transparent;
-    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
     color: #9ca3af;
-    padding: 6px 12px;
-    border-radius: 6px;
-    font-size: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
     cursor: pointer;
+    transition: all 0.2s;
+}
+
+.chat__select:hover {
+    border-color: rgba(255,255,255,0.2);
 }
 
 .chat__select:focus {
     outline: none;
+    border-color: rgba(0, 245, 255, 0.5);
 }
 
 .chat__messages {
     flex: 1;
     overflow-y: auto;
-    padding: 24px;
+    padding: 32px 0;
 }
 
 .chat__welcome {
     color: var(--text-dim);
     text-align: center;
-    padding: 40px 0;
-    font-family: 'Google Sans', system-ui, sans-serif;
+    padding: 60px 20px;
     font-size: 16px;
     line-height: 1.75;
 }
 
+/* 消息通用样式 */
 .chat__message {
-    display: flex;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
+    animation: fadeSlideIn 0.3s ease-out;
 }
 
+/* 用户消息 */
 .chat__message--user {
+    display: flex;
     justify-content: flex-end;
 }
 
-.chat__message--assistant {
-    justify-content: flex-start;
-}
-
-/* 对话气泡基础样式 - Gemini 风格 */
-.chat__bubble {
-    font-family: 'Google Sans', system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.75;
-    letter-spacing: 0.01em;
-    color: #e8eaed;
-}
-
-/* 用户消息保持气泡样式 */
 .chat__message--user .chat__bubble {
-    max-width: 80%;
+    max-width: 75%;
     background: rgba(0, 245, 255, 0.08);
-    border: none;
-    padding: 16px 20px;
-    border-radius: 16px;
+    border: 1px solid rgba(0, 245, 255, 0.15);
+    padding: 14px 18px;
+    border-radius: 18px 18px 4px 18px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #e5e7eb;
 }
 
-/* AI回复改为满行输出 */
+/* AI 消息 */
+.chat__message--assistant,
+.chat__message:not(.chat__message--user) {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.chat__avatar {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #00F5FF 0%, #0066FF 100%);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #000;
+}
+
 .chat__message--assistant .chat__bubble,
 .chat__message:not(.chat__message--user) .chat__bubble {
-    width: 100%;
-    max-width: 100%;
+    flex: 1;
+    min-width: 0;
     background: transparent;
     border: none;
-    padding: 8px 0;
+    padding: 0;
+    font-size: 15px;
+    line-height: 1.75;
+    color: #d1d5db;
 }
 
 .chat__role {
@@ -847,30 +869,57 @@ body {
 }
 
 .chat__input-area {
-    padding: 16px 0;
+    padding: 20px 0;
     background: transparent;
+    border-top: 1px solid rgba(255,255,255,0.06);
     display: flex;
-    gap: 8px;
+    gap: 12px;
+    align-items: flex-end;
 }
 
 .chat__input {
     flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 14px 18px;
     color: #fff;
-    font-family: 'Google Sans', system-ui, sans-serif;
-    font-size: 16px;
+    font-size: 15px;
+    font-family: inherit;
+    transition: border-color 0.2s;
 }
 
 .chat__input:focus {
     outline: none;
-    border-color: rgba(0, 245, 255, 0.5);
+    border-color: rgba(0, 245, 255, 0.4);
 }
 
 .chat__input::placeholder {
-    color: #6b7280;
+    color: #4b5563;
+}
+
+.btn--send {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, #00F5FF 0%, #00c8d4 100%);
+    border: none;
+    border-radius: 14px;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn--send:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba(0, 245, 255, 0.3);
+}
+
+.btn--send:active {
+    transform: scale(0.95);
 }
 
 /* ========== 16. 叙事 Tab ========== */
@@ -1113,29 +1162,31 @@ body {
 
 /* ========== 20. Markdown 内容样式 ========== */
 
-/* 对话气泡内的 Markdown - Gemini 风格 */
+/* 对话气泡内的 Markdown - 现代简洁风格 */
+.chat__bubble p {
+    margin: 0 0 16px;
+    font-size: 15px;
+    line-height: 1.75;
+    color: #d1d5db;
+}
+
+.chat__bubble p:last-child {
+    margin-bottom: 0;
+}
+
+/* 标题 - 降低视觉权重 */
 .chat__bubble h2,
 .chat__bubble h3,
 .chat__bubble h4 {
-    font-family: 'Google Sans', system-ui, sans-serif;
-    color: #e8eaed;
-    font-weight: 700;
-    margin-top: 24px;
-    margin-bottom: 16px;
+    color: #f3f4f6;
+    font-weight: 500;
+    margin: 24px 0 12px;
     line-height: 1.4;
 }
 
-.chat__bubble h2 {
-    font-size: 20px;
-}
-
-.chat__bubble h3 {
-    font-size: 18px;
-}
-
-.chat__bubble h4 {
-    font-size: 16px;
-}
+.chat__bubble h2 { font-size: 17px; }
+.chat__bubble h3 { font-size: 16px; }
+.chat__bubble h4 { font-size: 15px; }
 
 .chat__bubble h2:first-child,
 .chat__bubble h3:first-child,
@@ -1143,70 +1194,72 @@ body {
     margin-top: 0;
 }
 
-.chat__bubble p {
-    font-family: 'Google Sans', system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.75;
-    letter-spacing: 0.01em;
-    color: #e8eaed;
-    margin: 0 0 16px;
-}
-
-.chat__bubble p:last-child {
-    margin-bottom: 0;
-}
-
+/* 列表 - 更柔和 */
 .chat__bubble ul,
 .chat__bubble ol {
-    font-family: 'Google Sans', system-ui, sans-serif;
-    padding-left: 24px;
     margin: 0 0 16px;
+    padding-left: 20px;
 }
 
 .chat__bubble li {
-    font-size: 16px;
+    font-size: 15px;
     line-height: 1.75;
-    letter-spacing: 0.01em;
-    color: #e8eaed;
-    margin-bottom: 12px;
+    color: #d1d5db;
+    margin-bottom: 8px;
+    padding-left: 4px;
 }
 
 .chat__bubble li:last-child {
     margin-bottom: 0;
 }
 
+/* 加粗 - 更克制 */
 .chat__bubble strong {
-    color: #e8eaed;
-    font-weight: 700;
+    color: #f3f4f6;
+    font-weight: 500;
 }
 
+/* 斜体 */
 .chat__bubble em {
-    color: #bdc1c6;
+    color: #9ca3af;
     font-style: italic;
 }
 
+/* 行内代码 */
 .chat__bubble code {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 245, 255, 0.08);
+    color: #00d4e5;
     padding: 2px 6px;
     border-radius: 4px;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
-    color: var(--accent-green);
+    font-size: 13px;
 }
 
+/* 代码块 */
 .chat__bubble pre {
-    background: rgba(0, 0, 0, 0.4);
+    background: #111111;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
     padding: 16px;
-    border-radius: 8px;
+    margin: 16px 0;
     overflow-x: auto;
-    margin: 0 0 16px;
 }
 
 .chat__bubble pre code {
     background: none;
     padding: 0;
-    font-size: 14px;
+    color: #e5e7eb;
+    font-size: 13px;
     line-height: 1.6;
+}
+
+/* 引用块 */
+.chat__bubble blockquote {
+    border-left: 3px solid rgba(0, 245, 255, 0.3);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: #9ca3af;
+    font-style: italic;
 }
 
 /* 叙事卡片的 Markdown 样式 */

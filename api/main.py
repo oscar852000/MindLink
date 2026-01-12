@@ -153,6 +153,12 @@ async def mindmap_page():
     return FileResponse(str(WEB_DIR / "mindmap.html"))
 
 
+@app.get("/chat-demo")
+async def chat_demo_page():
+    """对话界面 Demo 页面"""
+    return FileResponse(str(WEB_DIR / "chat-demo.html"))
+
+
 @app.get("/health")
 async def health():
     """健康检查"""

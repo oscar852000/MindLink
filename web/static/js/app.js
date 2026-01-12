@@ -107,8 +107,17 @@ const MindLinkApp = (function () {
         // 对话
         dom.sendChatBtn.addEventListener('click', sendChatMessage);
         dom.clearChatBtn.addEventListener('click', clearChat);
+
+        // 输入法状态跟踪（解决中文输入法确认候选词误触发发送问题）
+        let isComposing = false;
+        dom.chatInput.addEventListener('compositionstart', () => {
+            isComposing = true;
+        });
+        dom.chatInput.addEventListener('compositionend', () => {
+            isComposing = false;
+        });
         dom.chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
                 e.preventDefault();
                 sendChatMessage();
             }
@@ -667,15 +676,18 @@ const MindLinkApp = (function () {
         const messageId = `msg_${Date.now()}`;
         const messageDiv = document.createElement('div');
         messageDiv.id = messageId;
-        messageDiv.className = 'chat__message' + (role === 'user' ? ' chat__message--user' : '');
+        messageDiv.className = 'chat__message' + (role === 'user' ? ' chat__message--user' : ' chat__message--assistant');
 
-        const roleText = role === 'user' ? '你' : 'AI';
         const contentHtml = role === 'user' ? escapeHtml(content) : markdownToHtml(content);
 
-        messageDiv.innerHTML = `
-            <div class="chat__role">${roleText}</div>
-            <div class="chat__bubble">${contentHtml}</div>
-        `;
+        if (role === 'user') {
+            messageDiv.innerHTML = `<div class="chat__bubble">${contentHtml}</div>`;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="chat__avatar">AI</div>
+                <div class="chat__bubble">${contentHtml}</div>
+            `;
+        }
 
         dom.chatMessages.appendChild(messageDiv);
         dom.chatMessages.scrollTop = dom.chatMessages.scrollHeight;
@@ -755,9 +767,9 @@ const MindLinkApp = (function () {
             .replace(/^### (.+)$/gm, '<h4>$1</h4>')
             .replace(/^## (.+)$/gm, '<h3>$1</h3>')
             .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-            .replace(/\*\*(.+?)\*\*/g, '$1')  // 移除加粗标记，保留文字
-            .replace(/\*(.+?)\*/g, '<em>$1</em>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
             .replace(/`([^`]+)`/g, '<code>$1</code>')
+            .replace(/^\* (.+)$/gm, '<li>$1</li>')
             .replace(/^- (.+)$/gm, '<li>$1</li>')
             .replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
 

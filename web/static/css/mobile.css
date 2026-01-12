@@ -470,7 +470,7 @@ section[id$="Tab"].active {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid var(--border-subtle);
     color: var(--text-main);
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 8px;
     font-size: 12px;
 }
@@ -487,7 +487,7 @@ section[id$="Tab"].active {
     padding: 20px 16px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 24px;
 }
 
 [data-logic-id="chat-welcome"] {
@@ -495,50 +495,125 @@ section[id$="Tab"].active {
     color: var(--text-muted);
     margin-top: 40px;
     font-size: 14px;
+    line-height: 1.6;
 }
 
+/* 消息通用样式 */
 [data-logic-id="chat-message"] {
-    padding: 16px 0;
-    font-size: 15px;
+    font-size: 16px;
     line-height: 1.7;
-    position: relative;
     word-wrap: break-word;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-[data-logic-id="chat-message"]::before {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    margin-bottom: 8px;
-    opacity: 0.5;
-}
-
-/* AI 回复：全宽 */
-[data-role="assistant"] {
-    width: 100%;
-    color: rgba(255, 255, 255, 0.9);
-}
-
-[data-role="assistant"]::before {
-    content: "AI";
-    color: var(--accent-primary);
+    animation: fadeIn 0.3s ease;
 }
 
 /* 用户消息：右对齐气泡 */
 [data-role="user"] {
     max-width: 85%;
     align-self: flex-end;
-    background: linear-gradient(135deg, rgba(123, 97, 255, 0.3), rgba(123, 97, 255, 0.1));
-    border: 1px solid rgba(123, 97, 255, 0.2);
+    background: rgba(0, 245, 255, 0.08);
+    border: 1px solid rgba(0, 245, 255, 0.15);
     border-radius: 16px 16px 4px 16px;
     padding: 12px 16px;
-    border-bottom: none;
     color: rgba(255, 255, 255, 0.9);
 }
 
-[data-role="user"]::before {
-    display: none;
+/* AI 消息：头像单独一行，内容全宽 */
+[data-role="assistant"] {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.chat-avatar {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #00F5FF 0%, #0066FF 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #000;
+}
+
+.chat-content {
+    width: 100%;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 16px;
+    line-height: 1.75;
+}
+
+/* AI 消息内的 Markdown 样式 */
+.chat-content p {
+    margin: 0 0 14px;
+    line-height: 1.75;
+}
+
+.chat-content p:last-child {
+    margin-bottom: 0;
+}
+
+.chat-content h2,
+.chat-content h3,
+.chat-content h4 {
+    color: #f3f4f6;
+    font-weight: 500;
+    margin: 20px 0 10px;
+    line-height: 1.4;
+}
+
+.chat-content h2 { font-size: 17px; }
+.chat-content h3 { font-size: 16px; }
+.chat-content h4 { font-size: 15px; }
+
+.chat-content h2:first-child,
+.chat-content h3:first-child,
+.chat-content h4:first-child {
+    margin-top: 0;
+}
+
+.chat-content ul,
+.chat-content ol {
+    margin: 0 0 14px;
+    padding-left: 20px;
+}
+
+.chat-content li {
+    margin-bottom: 8px;
+    line-height: 1.7;
+}
+
+.chat-content strong {
+    color: #f3f4f6;
+    font-weight: 500;
+}
+
+.chat-content code {
+    background: rgba(0, 245, 255, 0.1);
+    color: #00d4e5;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.chat-content pre {
+    background: #111;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 14px 0;
+    overflow-x: auto;
+}
+
+.chat-content pre code {
+    background: none;
+    padding: 0;
+    color: #e5e7eb;
+    font-size: 13px;
 }
 
 [data-logic-id="chat-input-area"] {
@@ -554,22 +629,22 @@ section[id$="Tab"].active {
 #chatInput {
     flex: 1;
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid transparent;
+    border: 1px solid rgba(255,255,255,0.1);
     border-radius: 20px;
-    padding: 14px 18px;
+    padding: 12px 16px;
     color: #fff;
-    font-size: 16px;
+    font-size: 15px;
     max-height: 120px;
     resize: none;
     transition: border 0.3s;
 }
 
 #chatInput:focus {
-    border-color: var(--accent-secondary);
+    border-color: rgba(0, 245, 255, 0.4);
 }
 
 #sendChatBtn {
-    background: var(--accent-primary);
+    background: linear-gradient(135deg, #00F5FF 0%, #00c8d4 100%);
     color: #000;
     border-radius: 50%;
     width: 44px;

@@ -143,12 +143,10 @@ function setupEventListeners() {
     els.feedInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitFeed();
     });
-    els.chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendChatMessage();
-        }
-    });
+
+    // 移动端对话输入：不使用 Enter 发送，只用按钮发送
+    // 因为移动端没有 Shift 键，用户无法区分"换行"和"发送"
+    // Enter 键在移动端默认行为是换行，不做特殊处理
 }
 
 // ==================== Mind 管理 ====================
@@ -630,8 +628,18 @@ function addChatMessage(role, content, isHtml = false) {
     const div = document.createElement('div');
     div.dataset.logicId = 'chat-message';
     div.dataset.role = role;
-    div.innerHTML = isHtml ? content : (role === 'user' ? escapeHtml(content) : markdownToHtml(content));
     div.id = `msg_${Date.now()}`;
+
+    if (role === 'user') {
+        div.innerHTML = isHtml ? content : escapeHtml(content);
+    } else {
+        // AI 消息带头像
+        const contentHtml = isHtml ? content : markdownToHtml(content);
+        div.innerHTML = `
+            <div class="chat-avatar">AI</div>
+            <div class="chat-content">${contentHtml}</div>
+        `;
+    }
 
     els.chatMessages.appendChild(div);
     els.chatMessages.scrollTop = els.chatMessages.scrollHeight;

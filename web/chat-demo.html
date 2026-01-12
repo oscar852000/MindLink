@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindLink - 对话界面 Demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        /* ========== 基础重置 ========== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #0a0a0a;
+            color: #e5e7eb;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ========== 页面容器 ========== */
+        .demo-container {
+            max-width: 900px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ========== 顶部标题 ========== */
+        .demo-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .demo-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .demo-header p {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        /* ========== 控制栏 ========== */
+        .chat-controls {
+            padding: 16px 24px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .chat-select {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #9ca3af;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .chat-select:hover {
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .chat-select:focus {
+            outline: none;
+            border-color: rgba(0, 245, 255, 0.5);
+        }
+
+        .btn-ghost {
+            background: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #6b7280;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-ghost:hover {
+            color: #fff;
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* ========== 对话区域 ========== */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px 24px;
+        }
+
+        /* 滚动条 */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        /* ========== 消息通用样式 ========== */
+        .message {
+            margin-bottom: 32px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ========== 用户消息 ========== */
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .message-user .bubble {
+            max-width: 75%;
+            background: rgba(0, 245, 255, 0.08);
+            border: 1px solid rgba(0, 245, 255, 0.15);
+            padding: 14px 18px;
+            border-radius: 18px 18px 4px 18px;
+            font-size: 15px;
+            line-height: 1.6;
+            color: #e5e7eb;
+        }
+
+        /* ========== AI 消息 ========== */
+        .message-ai {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .message-ai .avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #00F5FF 0%, #0066FF 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .message-ai .content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* ========== AI 内容排版 - 核心样式 ========== */
+        .message-ai .content {
+            font-size: 15px;
+            line-height: 1.75;
+            color: #d1d5db;
+        }
+
+        /* 段落 */
+        .message-ai .content p {
+            margin: 0 0 16px;
+        }
+
+        .message-ai .content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 标题 - 降低视觉权重 */
+        .message-ai .content h2,
+        .message-ai .content h3,
+        .message-ai .content h4 {
+            color: #f3f4f6;
+            font-weight: 500;
+            margin: 24px 0 12px;
+            line-height: 1.4;
+        }
+
+        .message-ai .content h2 { font-size: 17px; }
+        .message-ai .content h3 { font-size: 16px; }
+        .message-ai .content h4 { font-size: 15px; }
+
+        .message-ai .content h2:first-child,
+        .message-ai .content h3:first-child,
+        .message-ai .content h4:first-child {
+            margin-top: 0;
+        }
+
+        /* 列表 - 更柔和 */
+        .message-ai .content ul,
+        .message-ai .content ol {
+            margin: 0 0 16px;
+            padding-left: 20px;
+        }
+
+        .message-ai .content li {
+            margin-bottom: 8px;
+            padding-left: 4px;
+        }
+
+        .message-ai .content li:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-ai .content li::marker {
+            color: #6b7280;
+        }
+
+        /* 加粗 - 更克制 */
+        .message-ai .content strong {
+            color: #f3f4f6;
+            font-weight: 500;
+        }
+
+        /* 斜体 */
+        .message-ai .content em {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* 行内代码 */
+        .message-ai .content code {
+            background: rgba(0, 245, 255, 0.08);
+            color: #00d4e5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+        }
+
+        /* 代码块 */
+        .message-ai .content pre {
+            background: #111111;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 16px;
+            margin: 16px 0;
+            overflow-x: auto;
+        }
+
+        .message-ai .content pre code {
+            background: none;
+            padding: 0;
+            color: #e5e7eb;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        /* 引用块 */
+        .message-ai .content blockquote {
+            border-left: 3px solid rgba(0, 245, 255, 0.3);
+            padding-left: 16px;
+            margin: 16px 0;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* 分隔线 */
+        .message-ai .content hr {
+            border: none;
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 24px 0;
+        }
+
+        /* ========== 输入区域 ========== */
+        .chat-input-area {
+            padding: 20px 24px;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: #fff;
+            font-size: 15px;
+            font-family: inherit;
+            resize: none;
+            min-height: 50px;
+            max-height: 150px;
+            transition: border-color 0.2s;
+            overflow-y: auto;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+
+        .chat-input::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: rgba(0, 245, 255, 0.4);
+        }
+
+        .chat-input::placeholder {
+            color: #4b5563;
+        }
+
+        .btn-send {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #00F5FF 0%, #00c8d4 100%);
+            border: none;
+            border-radius: 14px;
+            color: #000;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+
+        .btn-send:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 20px rgba(0, 245, 255, 0.3);
+        }
+
+        .btn-send:active {
+            transform: scale(0.95);
+        }
+
+        .btn-send svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* ========== 提示文字 ========== */
+        .input-hint {
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            color: #4b5563;
+        }
+
+        /* ========== 思考中状态 ========== */
+        .thinking {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .thinking span {
+            width: 6px;
+            height: 6px;
+            background: #6b7280;
+            border-radius: 50%;
+            animation: thinking 1.4s ease-in-out infinite;
+        }
+
+        .thinking span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes thinking {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ========== 欢迎消息 ========== */
+        .welcome {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .welcome-icon {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, rgba(0, 245, 255, 0.15) 0%, rgba(0, 102, 255, 0.15) 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .welcome-icon svg {
+            width: 28px;
+            height: 28px;
+            color: #00F5FF;
+        }
+
+        .welcome h2 {
+            font-size: 18px;
+            font-weight: 500;
+            color: #e5e7eb;
+            margin-bottom: 8px;
+        }
+
+        .welcome p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <!-- 顶部 -->
+        <div class="demo-header">
+            <h1>2026 产品规划思考</h1>
+            <p>对话界面 Demo - 现代 LLM 风格</p>
+        </div>
+
+        <!-- 控制栏 -->
+        <div class="chat-controls">
+            <select class="chat-select">
+                <option>Gemini 3 Flash</option>
+                <option>Gemini 3 Pro</option>
+                <option>GPT-5.2 Plato</option>
+            </select>
+            <select class="chat-select">
+                <option>理性分析</option>
+                <option>苏格拉底式</option>
+                <option>创意发散</option>
+            </select>
+            <button class="btn-ghost">清空对话</button>
+        </div>
+
+        <!-- 对话区域 -->
+        <div class="chat-messages">
+            <!-- 用户消息 -->
+            <div class="message message-user">
+                <div class="bubble">帮我分析一下 MindLink 这个产品的核心价值和潜在问题</div>
+            </div>
+
+            <!-- AI 消息 -->
+            <div class="message message-ai">
+                <div class="avatar">AI</div>
+                <div class="content">
+                    <p>根据你之前的记录，我来帮你梳理一下 MindLink 的核心价值和潜在问题。</p>
+
+                    <h3>核心价值</h3>
+                    <p>MindLink 解决的是一个很实在的痛点：人的想法是碎片化的，但表达需要结构化。你的定位是让 AI 做编辑器而不是作者，这个克制很重要。</p>
+                    <ul>
+                        <li>降低整理成本 - 用户只管输入，AI 负责去噪和结构化</li>
+                        <li>保留思想演变 - 时间轴记录让用户能追溯自己的思考过程</li>
+                        <li>按需输出 - 同一份素材可以转化为不同场景的表达</li>
+                    </ul>
+
+                    <h3>潜在问题</h3>
+                    <p>从你的记录来看，有几个点值得注意：</p>
+                    <ol>
+                        <li>用户习惯培养 - 需要用户持续投喂才能发挥价值，冷启动可能困难</li>
+                        <li>AI 准确性 - 去噪过程可能丢失用户认为重要的细节</li>
+                        <li>差异化 - 和 Notion AI、Mem 等产品的差异需要更清晰</li>
+                    </ol>
+
+                    <h3>一个建议</h3>
+                    <p>你之前提到想做"第二大脑"，但这个概念已经被用烂了。不如聚焦在一个更具体的场景，比如：</p>
+                    <blockquote>帮助创业者把日常零散想法，快速整理成可以给投资人看的材料。</blockquote>
+                    <p>这样定位更锐利，也更容易验证。</p>
+                </div>
+            </div>
+
+            <!-- 用户消息 -->
+            <div class="message message-user">
+                <div class="bubble">你说的差异化问题，具体应该怎么解决？能给一些代码层面的建议吗？</div>
+            </div>
+
+            <!-- AI 消息 -->
+            <div class="message message-ai">
+                <div class="avatar">AI</div>
+                <div class="content">
+                    <p>差异化的关键不在于功能多少，而在于核心体验的独特性。从代码层面，我有几个建议：</p>
+
+                    <h3>1. 强化"时间覆盖"机制</h3>
+                    <p>你的 Crystal 结构已经有 <code>evolution</code> 字段，但可以做得更彻底：</p>
+                    <pre><code># 在 ai_service.py 中增加版本对比
+async def compare_crystal_versions(
+    old_crystal: dict,
+    new_crystal: dict
+) -> dict:
+    """对比两个版本的 Crystal，生成变化摘要"""
+    changes = {
+        "added": [],
+        "removed": [],
+        "modified": []
+    }
+    # 实现对比逻辑...
+    return changes</code></pre>
+
+                    <h3>2. 优化去噪的可控性</h3>
+                    <p>让用户能够"纠正" AI 的去噪结果，这个反馈可以用来持续优化：</p>
+                    <ul>
+                        <li>保留原始内容和去噪内容的对照</li>
+                        <li>用户可以标记"这个不该删"</li>
+                        <li>积累用户偏好，个性化去噪策略</li>
+                    </ul>
+
+                    <h3>3. 独特的输出能力</h3>
+                    <p>Notion AI 是通用写作助手，你可以专注于特定场景的输出模板，比如投资人汇报、周报、复盘等。这些模板内置专业知识，不是简单的格式转换。</p>
+
+                    <hr>
+
+                    <p>核心思路是：与其在功能广度上竞争，不如在特定场景的深度上做到极致。你记录里提到的"AI 是编辑器不是作者"这个原则，其实就是很好的差异化定位。</p>
+                </div>
+            </div>
+
+            <!-- 用户消息 -->
+            <div class="message message-user">
+                <div class="bubble">明白了，那接下来的优先级应该怎么排？</div>
+            </div>
+
+            <!-- AI 消息 - 思考中 -->
+            <div class="message message-ai">
+                <div class="avatar">AI</div>
+                <div class="content">
+                    <div class="thinking">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="chat-input-area">
+            <div class="input-wrapper">
+                <textarea class="chat-input" placeholder="输入你的问题..." rows="1"></textarea>
+                <button class="btn-send">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+            <div class="input-hint">Enter 发送 / Shift + Enter 换行</div>
+        </div>
+    </div>
+
+    <script>
+        // 自动调整输入框高度
+        const textarea = document.querySelector('.chat-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+        });
+    </script>
+</body>
+</html>
