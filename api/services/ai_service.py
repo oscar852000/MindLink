@@ -629,3 +629,86 @@ async def transcribe_audio_gemini(
     except Exception as e:
         logger.error(f"Gemini 转录失败: {e}")
         raise Exception(f"Gemini 转录失败: {str(e)}")
+
+
+# ============================================================
+# 晶体融合 - 提取附晶体独特内容
+# ============================================================
+
+async def extract_unique_content(
+    master_feeds: List[Dict[str, Any]],
+    slave_feeds: List[Dict[str, Any]],
+    master_title: str,
+    slave_title: str
+) -> Dict[str, Any]:
+    """
+    对比两个晶体的内容，提取附晶体中独有的信息
+
+    Args:
+        master_feeds: 主晶体的时间轴记录列表
+        slave_feeds: 附晶体的时间轴记录列表
+        master_title: 主晶体标题
+        slave_title: 附晶体标题
+
+    Returns:
+        {
+            "supplements": [...],  # 需要补充的内容列表
+            "reasoning": "..."     # 说明
+        }
+    """
+    system_prompt = get_prompt("absorb_extract")
+
+    # 构建主晶体内容
+    if master_feeds:
+        master_content = "\n\n".join([
+            f"【{f['created_at'][:16]}】\n{f.get('cleaned_content') or f.get('content', '')}"
+            for f in master_feeds
+        ])
+    else:
+        master_content = "（暂无内容）"
+
+    # 构建附晶体内容
+    if slave_feeds:
+        slave_content = "\n\n".join([
+            f"【{f['created_at'][:16]}】\n{f.get('cleaned_content') or f.get('content', '')}"
+            for f in slave_feeds
+        ])
+    else:
+        slave_content = "（暂无内容）"
+
+    user_prompt = f"""## 主晶体 A：「{master_title}」
+{master_content}
+
+---
+
+## 附晶体 B：「{slave_title}」
+{slave_content}
+
+---
+
+请对比以上两个晶体的内容，找出 B 中有但 A 中没有的独特信息。"""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+
+    try:
+        result = await call_ai(messages, thinking_level="medium", max_tokens=8000)
+        logger.info(f"[Absorb] AI 原始返回: {result[:500] if result else '(空)'}")
+        data = _parse_json_response(result)
+
+        return {
+            "supplements": data.get("supplements", []),
+            "reasoning": data.get("reasoning", "")
+        }
+
+    except json.JSONDecodeError as e:
+        logger.error(f"晶体融合 JSON 解析失败: {e}, 原始返回: {result[:200] if result else '(空)'}")
+        return {
+            "supplements": [],
+            "reasoning": "AI 返回格式错误，请重试"
+        }
+    except Exception as e:
+        logger.error(f"晶体融合提取失败: {e}")
+        raise

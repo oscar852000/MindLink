@@ -353,6 +353,31 @@ class Database:
             "created_at": now
         }
 
+    def add_feed_with_time(self, feed_id: str, mind_id: str, content: str, created_at: str) -> Dict[str, Any]:
+        """添加投喂（指定创建时间，用于晶体融合）"""
+        now = datetime.now().isoformat()
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO feed_items (id, mind_id, content, created_at)
+                VALUES (?, ?, ?, ?)
+            """, (feed_id, mind_id, content, created_at))
+
+            # 更新 Mind 的 updated_at（使用当前时间）
+            cursor.execute("""
+                UPDATE minds SET updated_at = ? WHERE id = ?
+            """, (now, mind_id))
+
+            conn.commit()
+
+        return {
+            "id": feed_id,
+            "mind_id": mind_id,
+            "content": content,
+            "created_at": created_at
+        }
+
     def get_feeds(self, mind_id: str, limit: int = 20) -> List[Dict[str, Any]]:
         """获取 Mind 的投喂列表"""
         with self.get_connection() as conn:

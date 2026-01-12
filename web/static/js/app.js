@@ -74,6 +74,31 @@ const MindLinkApp = (function () {
         dom.editFeedContent = document.getElementById('editFeedContent');
         dom.editCancelBtn = document.getElementById('editCancelBtn');
         dom.editSaveBtn = document.getElementById('editSaveBtn');
+
+        // 晶体整理
+        dom.organizeBtn = document.getElementById('organizeBtn');
+        dom.organizeView = document.getElementById('organizeView');
+        dom.organizeBackBtn = document.getElementById('organizeBackBtn');
+        dom.organizeList = document.getElementById('organizeList');
+        dom.masterSlot = document.getElementById('masterSlot');
+        dom.slaveSlot = document.getElementById('slaveSlot');
+        dom.masterTitle = document.getElementById('masterTitle');
+        dom.slaveTitle = document.getElementById('slaveTitle');
+        dom.startAbsorbBtn = document.getElementById('startAbsorbBtn');
+
+        // 模态框 - 融合
+        dom.absorbPreviewModal = document.getElementById('absorbPreviewModal');
+        dom.absorbPreviewDesc = document.getElementById('absorbPreviewDesc');
+        dom.absorbPreviewList = document.getElementById('absorbPreviewList');
+        dom.absorbSummary = document.getElementById('absorbSummary');
+        dom.absorbWarning = document.getElementById('absorbWarning');
+        dom.absorbCancelBtn = document.getElementById('absorbCancelBtn');
+        dom.absorbConfirmBtn = document.getElementById('absorbConfirmBtn');
+        dom.absorbLoadingModal = document.getElementById('absorbLoadingModal');
+        dom.absorbLoadingText = document.getElementById('absorbLoadingText');
+        dom.absorbSuccessModal = document.getElementById('absorbSuccessModal');
+        dom.absorbSuccessDesc = document.getElementById('absorbSuccessDesc');
+        dom.absorbSuccessBtn = document.getElementById('absorbSuccessBtn');
     }
 
     // ========== 事件绑定 ==========
@@ -138,6 +163,14 @@ const MindLinkApp = (function () {
                 document.querySelectorAll('.timeline__dropdown.is-open').forEach(d => d.classList.remove('is-open'));
             }
         });
+
+        // 晶体整理
+        dom.organizeBtn.addEventListener('click', openOrganizeView);
+        dom.organizeBackBtn.addEventListener('click', closeOrganizeView);
+        dom.startAbsorbBtn.addEventListener('click', startAbsorb);
+        dom.absorbCancelBtn.addEventListener('click', () => dom.absorbPreviewModal.close());
+        dom.absorbConfirmBtn.addEventListener('click', confirmAbsorb);
+        dom.absorbSuccessBtn.addEventListener('click', finishAbsorb);
     }
 
     // ========== 用户信息 ==========
@@ -219,9 +252,10 @@ const MindLinkApp = (function () {
             item.classList.toggle('is-active', item.dataset.mindId === mindId);
         });
 
-        // 显示详情
+        // 显示详情，隐藏其他视图
         dom.emptyState.hidden = true;
         dom.mindDetail.hidden = false;
+        dom.organizeView.hidden = true;
 
         // 清空输出内容
         dom.outputResult.innerHTML = '';
@@ -294,6 +328,7 @@ const MindLinkApp = (function () {
                     currentMindId = null;
                     dom.emptyState.hidden = false;
                     dom.mindDetail.hidden = true;
+                    dom.organizeView.hidden = true;
                 }
                 await loadMinds();
             } else {
@@ -831,6 +866,260 @@ const MindLinkApp = (function () {
         });
 
         console.log('思维导图模态框已初始化');
+    }
+
+    // ========== 晶体整理 ==========
+
+    // 整理状态
+    let organizeState = {
+        masterMind: null,
+        slaveMind: null,
+        previewData: null,
+        minds: []
+    };
+
+    // 打开整理视图
+    async function openOrganizeView() {
+        // 隐藏其他视图
+        dom.emptyState.hidden = true;
+        dom.mindDetail.hidden = true;
+        dom.organizeView.hidden = false;
+
+        // 重置状态
+        organizeState.masterMind = null;
+        organizeState.slaveMind = null;
+        organizeState.previewData = null;
+        updateOrganizeUI();
+
+        // 加载晶体列表
+        await loadOrganizeList();
+    }
+
+    // 关闭整理视图
+    function closeOrganizeView() {
+        dom.organizeView.hidden = true;
+
+        // 恢复之前的视图
+        if (currentMindId) {
+            dom.mindDetail.hidden = false;
+        } else {
+            dom.emptyState.hidden = false;
+        }
+    }
+
+    // 加载整理列表
+    async function loadOrganizeList() {
+        try {
+            const response = await fetch(`${API_BASE}/minds`, { credentials: 'same-origin' });
+            const data = await response.json();
+            organizeState.minds = data.minds || [];
+            renderOrganizeList();
+        } catch (error) {
+            console.error('加载晶体列表失败:', error);
+            dom.organizeList.innerHTML = '<p class="organize-view__empty">加载失败，请重试</p>';
+        }
+    }
+
+    // 渲染整理列表
+    function renderOrganizeList() {
+        if (organizeState.minds.length < 2) {
+            dom.organizeList.innerHTML = '<p class="organize-view__empty">需要至少 2 个晶体才能进行融合</p>';
+            return;
+        }
+
+        dom.organizeList.innerHTML = organizeState.minds.map(mind => {
+            const isMaster = organizeState.masterMind?.id === mind.id;
+            const isSlave = organizeState.slaveMind?.id === mind.id;
+            const classes = ['organize-card'];
+            if (isMaster) classes.push('is-master');
+            if (isSlave) classes.push('is-slave');
+
+            return `
+                <div class="${classes.join(' ')}" data-mind-id="${mind.id}">
+                    <div class="organize-card__header">
+                        <span class="organize-card__badge">${isMaster ? '★ 主晶体' : (isSlave ? '○ 附晶体' : '')}</span>
+                    </div>
+                    <h4 class="organize-card__title">${escapeHtml(mind.title)}</h4>
+                    <p class="organize-card__summary">${escapeHtml(mind.summary || '暂无概述')}</p>
+                    <span class="organize-card__date">${formatDate(mind.updated_at)}</span>
+                </div>
+            `;
+        }).join('');
+
+        // 绑定点击事件
+        dom.organizeList.querySelectorAll('.organize-card').forEach(card => {
+            card.addEventListener('click', () => selectOrganizeMind(card.dataset.mindId));
+        });
+    }
+
+    // 选择晶体
+    function selectOrganizeMind(mindId) {
+        const mind = organizeState.minds.find(m => m.id === mindId);
+        if (!mind) return;
+
+        // 如果已经选中，取消选择
+        if (organizeState.masterMind?.id === mindId) {
+            organizeState.masterMind = null;
+        } else if (organizeState.slaveMind?.id === mindId) {
+            organizeState.slaveMind = null;
+        } else {
+            // 选择新的晶体
+            if (!organizeState.masterMind) {
+                organizeState.masterMind = mind;
+            } else if (!organizeState.slaveMind) {
+                organizeState.slaveMind = mind;
+            } else {
+                // 两个都已选，替换附晶体
+                organizeState.slaveMind = mind;
+            }
+        }
+
+        updateOrganizeUI();
+        renderOrganizeList();
+    }
+
+    // 更新整理界面状态
+    function updateOrganizeUI() {
+        // 更新槽位显示
+        if (organizeState.masterMind) {
+            dom.masterSlot.classList.add('has-selection');
+            dom.masterTitle.textContent = organizeState.masterMind.title;
+        } else {
+            dom.masterSlot.classList.remove('has-selection');
+            dom.masterTitle.textContent = '点击下方列表选择';
+        }
+
+        if (organizeState.slaveMind) {
+            dom.slaveSlot.classList.add('has-selection');
+            dom.slaveTitle.textContent = organizeState.slaveMind.title;
+        } else {
+            dom.slaveSlot.classList.remove('has-selection');
+            dom.slaveTitle.textContent = '将被吸收';
+        }
+
+        // 更新按钮状态
+        dom.startAbsorbBtn.disabled = !(organizeState.masterMind && organizeState.slaveMind);
+    }
+
+    // 开始融合（预览）
+    async function startAbsorb() {
+        if (!organizeState.masterMind || !organizeState.slaveMind) return;
+
+        // 显示加载动画
+        dom.absorbLoadingText.textContent = '正在分析晶体内容...';
+        dom.absorbLoadingModal.showModal();
+
+        try {
+            const response = await fetch(`${API_BASE}/minds/absorb`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    master_mind_id: organizeState.masterMind.id,
+                    slave_mind_id: organizeState.slaveMind.id
+                })
+            });
+
+            const data = await response.json();
+            dom.absorbLoadingModal.close();
+
+            if (!response.ok) {
+                alert(data.detail || '分析失败，请重试');
+                return;
+            }
+
+            organizeState.previewData = data.preview;
+            showAbsorbPreview();
+
+        } catch (error) {
+            dom.absorbLoadingModal.close();
+            console.error('融合分析失败:', error);
+            alert('融合分析失败，请重试');
+        }
+    }
+
+    // 显示融合预览
+    function showAbsorbPreview() {
+        const preview = organizeState.previewData;
+        if (!preview) return;
+
+        dom.absorbPreviewDesc.textContent = `即将补充以下内容到「${preview.master_title}」`;
+        dom.absorbWarning.textContent = `「${preview.slave_title}」将被删除`;
+
+        if (preview.supplements.length === 0) {
+            dom.absorbPreviewList.innerHTML = `
+                <div class="absorb-modal__empty">
+                    <p>附晶体的内容主晶体已全部覆盖</p>
+                    <p style="font-size: 12px; margin-top: 8px;">确认后将直接删除附晶体</p>
+                </div>
+            `;
+            dom.absorbSummary.textContent = '无需补充内容，但可清理重复晶体';
+        } else {
+            dom.absorbPreviewList.innerHTML = preview.supplements.map(item => `
+                <div class="absorb-modal__item">
+                    <div class="absorb-modal__item-time">${item.original_time || '未知时间'}</div>
+                    <div class="absorb-modal__item-content">${escapeHtml(item.content)}</div>
+                </div>
+            `).join('');
+            dom.absorbSummary.textContent = `共 ${preview.supplement_count} 条记录将被补充`;
+        }
+
+        dom.absorbPreviewModal.showModal();
+    }
+
+    // 确认融合
+    async function confirmAbsorb() {
+        const preview = organizeState.previewData;
+        if (!preview) return;
+
+        dom.absorbPreviewModal.close();
+        dom.absorbLoadingText.textContent = '正在融合晶体...';
+        dom.absorbLoadingModal.showModal();
+
+        try {
+            const response = await fetch(`${API_BASE}/minds/absorb/confirm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    master_mind_id: preview.master_mind_id,
+                    slave_mind_id: preview.slave_mind_id,
+                    supplements: preview.supplements
+                })
+            });
+
+            const data = await response.json();
+            dom.absorbLoadingModal.close();
+
+            if (!response.ok) {
+                alert(data.detail || '融合失败，请重试');
+                return;
+            }
+
+            // 显示成功
+            dom.absorbSuccessDesc.textContent = data.message;
+            dom.absorbSuccessModal.showModal();
+
+        } catch (error) {
+            dom.absorbLoadingModal.close();
+            console.error('融合失败:', error);
+            alert('融合失败，请重试');
+        }
+    }
+
+    // 完成融合
+    function finishAbsorb() {
+        dom.absorbSuccessModal.close();
+
+        // 重置状态
+        organizeState.masterMind = null;
+        organizeState.slaveMind = null;
+        organizeState.previewData = null;
+
+        // 刷新列表
+        loadOrganizeList();
+        loadMinds(); // 刷新侧边栏
+        updateOrganizeUI();
     }
 
     // ========== 初始化 ==========

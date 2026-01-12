@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css?v=20260112a">
+    <link rel="stylesheet" href="/static/css/style.css?v=20260112c">
 </head>
 
 <body>
@@ -30,6 +30,15 @@
                         <line x1="5" y1="12" x2="19" y2="12"></line>
                     </svg>
                     <span>新建 Mind</span>
+                </button>
+                <button id="organizeBtn" class="btn btn--organize" data-logic-id="organize-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M8 12h8"></path>
+                        <path d="M12 8v8"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>晶体整理</span>
                 </button>
             </header>
 
@@ -236,6 +245,57 @@
                     </section>
                 </div>
             </section>
+
+            <!-- Crystal Organize Page -->
+            <section id="organizeView" class="organize-view" data-logic-id="organize-view" hidden>
+                <header class="organize-view__header">
+                    <button id="organizeBackBtn" class="btn btn--ghost organize-view__back" data-logic-id="organize-back">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="15 18 9 12 15 6"></polyline>
+                        </svg>
+                        <span>返回</span>
+                    </button>
+                    <h2 class="organize-view__title">晶体整理</h2>
+                </header>
+
+                <div class="organize-view__content">
+                    <p class="organize-view__hint">选择要融合的晶体（先选主晶体，再选附晶体）</p>
+
+                    <div class="organize-view__selection">
+                        <div class="organize-view__selected">
+                            <div class="organize-view__slot" id="masterSlot" data-logic-id="master-slot">
+                                <span class="organize-view__slot-label">★ 主晶体</span>
+                                <span class="organize-view__slot-title" id="masterTitle">点击下方列表选择</span>
+                            </div>
+                            <div class="organize-view__arrow">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </div>
+                            <div class="organize-view__slot organize-view__slot--slave" id="slaveSlot" data-logic-id="slave-slot">
+                                <span class="organize-view__slot-label">○ 附晶体</span>
+                                <span class="organize-view__slot-title" id="slaveTitle">将被吸收</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="organizeList" class="organize-view__list" data-logic-id="organize-list">
+                        <!-- 晶体卡片动态渲染 -->
+                    </div>
+                </div>
+
+                <footer class="organize-view__footer">
+                    <button id="startAbsorbBtn" class="btn btn--primary btn--large" data-logic-id="start-absorb" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 12h8"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span>开始融合</span>
+                    </button>
+                </footer>
+            </section>
         </main>
     </div>
 
@@ -279,7 +339,56 @@
         </div>
     </dialog>
 
-    <script src="/static/js/app.js?v=20260112b"></script>
+    <!-- Absorb Preview Modal -->
+    <dialog id="absorbPreviewModal" class="modal absorb-modal" data-logic-id="absorb-preview-modal">
+        <div class="modal__content absorb-modal__content">
+            <h3 class="modal__title">确认融合</h3>
+            <p class="modal__desc" id="absorbPreviewDesc">即将补充以下内容到「主晶体名」</p>
+
+            <div id="absorbPreviewList" class="absorb-modal__list">
+                <!-- 动态渲染补充内容 -->
+            </div>
+
+            <div class="absorb-modal__summary">
+                <p id="absorbSummary">共 0 条记录将被补充</p>
+                <p class="absorb-modal__warning" id="absorbWarning">「附晶体名」将被删除</p>
+            </div>
+
+            <div class="modal__actions">
+                <button id="absorbCancelBtn" class="btn btn--ghost">取消</button>
+                <button id="absorbConfirmBtn" class="btn btn--primary">确认融合</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Absorb Loading Modal -->
+    <dialog id="absorbLoadingModal" class="modal absorb-loading-modal" data-logic-id="absorb-loading-modal">
+        <div class="absorb-loading__content">
+            <div class="absorb-loading__animation">
+                <div class="absorb-loading__crystal absorb-loading__crystal--master"></div>
+                <div class="absorb-loading__crystal absorb-loading__crystal--slave"></div>
+            </div>
+            <p class="absorb-loading__text" id="absorbLoadingText">正在分析晶体内容...</p>
+        </div>
+    </dialog>
+
+    <!-- Absorb Success Modal -->
+    <dialog id="absorbSuccessModal" class="modal absorb-success-modal" data-logic-id="absorb-success-modal">
+        <div class="absorb-success__content">
+            <div class="absorb-success__icon">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="16 12 12 8 8 12"></polyline>
+                    <line x1="12" y1="16" x2="12" y2="8"></line>
+                </svg>
+            </div>
+            <h3 class="absorb-success__title">思维融合完成</h3>
+            <p class="absorb-success__desc" id="absorbSuccessDesc">已成功融合晶体内容</p>
+            <button id="absorbSuccessBtn" class="btn btn--primary">完成</button>
+        </div>
+    </dialog>
+
+    <script src="/static/js/app.js?v=20260112d"></script>
 </body>
 
 </html>

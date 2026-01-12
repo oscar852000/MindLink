@@ -54,6 +54,15 @@
 
 ---
 
+### [2026-01] ISO 时间格式解析需显式处理
+**关键词**：时间、datetime、fromisoformat、解析失败
+**现象**：时间字符串 `2026-01-02T06:40` 解析失败，fallback 到当前时间
+**原因**：`datetime.fromisoformat()` 对无秒的 ISO 格式支持不稳定
+**教训**：用 `strptime(time_str, "%Y-%m-%dT%H:%M")` 显式解析，不依赖 fromisoformat
+**状态**：活跃
+
+---
+
 ## 已解决（仅供参考）
 
 *（暂无已解决的历史问题）*

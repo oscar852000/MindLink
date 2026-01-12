@@ -21,6 +21,11 @@ const CATEGORY_CONFIG = {
         name: '晶体底层记忆',
         description: '记忆锚点提取与管理',
         icon: '🔮'
+    },
+    'absorb': {
+        name: '晶体融合',
+        description: '晶体吞并与内容提取',
+        icon: '🔗'
     }
 };
 
@@ -79,8 +84,8 @@ function renderPromptList() {
     // 渲染分组
     let html = '';
 
-    // 按固定顺序渲染：core, chat, memory
-    const categoryOrder = ['core', 'chat', 'memory'];
+    // 按固定顺序渲染：core, chat, memory, absorb
+    const categoryOrder = ['core', 'chat', 'memory', 'absorb'];
 
     categoryOrder.forEach(category => {
         if (!grouped[category] || grouped[category].length === 0) return;
